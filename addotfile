@@ -1,4 +1,4 @@
 for file in "$@"
 do
-  mv ~/.$file ~/dotfiles/ && git add ~/dotfiles/.$file && git commit -m "Adding .$file" && git push && ln -nfs ~/dotfiles ~/.$file
+  mv ~/.$file ~/dotfiles/ && git add ~/dotfiles/.$file && git commit -m "Adding .$file" && git push && ln -nfs ~/dotfiles/.$file ~/.$file
 done
