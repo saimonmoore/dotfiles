@@ -1,0 +1,35 @@
+[user]
+	name = Saimon Moore
+	email = saimon@saimonmoore.net
+[color]
+	diff = auto
+	status = auto
+	branch = auto
+[color "branch"]
+        current = yellow reverse
+        local = yellow
+        remote = green
+[color "diff"]
+        meta = yellow bold
+        frag = magenta bold
+        old = red bold
+        new = green bold
+[color "status"]
+        added = yellow
+        changed = green
+        untracked = cyan
+
+[core]
+	excludesfile = ~/.gitignore
+	autocrlf = false
+[alias]
+	st = status
+  ci = commit
+	co = checkout
+	br = branch
+	unadd = reset HEAD
+[branch]
+	autosetupmerge = true
+	autosetuprebase = always
+[push]
+	default = tracking
