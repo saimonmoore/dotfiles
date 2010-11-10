@@ -1,0 +1,22 @@
+# ECMAScript/JavaScript/JScript/ActionScript/LiveScript (ugh!) Syntax Highlighting
+# by Barry Burns <bburns at synset dot net>
+# License: GPL 2 or later
+
+syntax "ecmascript" "\.js$"
+color white "^.+$"
+# Identifiers
+color brightcyan "\b[a-zA-Z\$_][a-zA-Z0-9\$_]*\b"
+# Braces, brackets and parentheses
+color brightmagenta "\[|\]|\(|\)|\{|\}"
+# Integers, floats
+color brightblue "\b[0-9]+(.[0-9]+)?\b"
+# Reserved words
+color brightyellow "\b(break|case|catch|continue|default|delete|do|else|finally|for|function|if|in|instanceof|new|return|switch|this|throw|try|typeof|var|void|while|with)\b"
+# Operations
+color brightgreen "\||~|!|\.|\*|\+|-|=|<|>|/"
+# Strings
+color blue ""[^"]*""
+color blue "'[^']*'"
+# Comments
+color brightwhite "//[^\n]*"
+color brightwhite start="/\*" end="\*/"
