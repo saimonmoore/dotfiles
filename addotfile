@@ -1,0 +1,1 @@
+mv ../.$1 . && git add .$1 && git commit -m 'Adding .$1' && git push && ln -nfs ~/dotfiles ~/.$1
