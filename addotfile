@@ -1,1 +1,4 @@
-mv ../.$1 . && git add .$1 && git commit -m 'Adding .$1' && git push && ln -nfs ~/dotfiles ~/.$1
+for file in "$@"
+do
+  mv ~/.$file ~/dotfiles/ && git add ~/dotfiles/.$file && git commit -m "Adding .$file" && git push && ln -nfs ~/dotfiles ~/.$file
+done
