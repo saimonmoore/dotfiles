@@ -40,6 +40,11 @@ set viminfo^=!
 
 set keywordprg=qri
 
+" From http://www.mrkirkland.com/vim-japanese-os-x/
+set enc=utf-8
+set fenc=utf-8
+set fencs=iso-2022-jp,euc-jp,cp932
+
 " Minibuffer Explorer Settings
 let g:miniBufExplMapWindowNavVim = 1
 let g:miniBufExplMapWindowNavArrows = 1
