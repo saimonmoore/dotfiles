@@ -125,14 +125,6 @@ MANPATH=`/usr/bin/manpath`:~/local/share/man:/usr/local/share/man
 #https://wincent.com/issues/1558
 TERM=xterm-color
 
-#from: http://smartic.us/2010/10/27/tune-your-ruby-enterprise-edition-garbage-collection-settings-to-run-tests-faster/
-#needs ree
-RUBY_HEAP_MIN_SLOTS=1000000
-RUBY_HEAP_SLOTS_INCREMENT=1000000
-RUBY_HEAP_SLOTS_GROWTH_FACTOR=1
-RUBY_GC_MALLOC_LIMIT=1000000000
-RUBY_HEAP_FREE_MIN=500000
-
 SSH_ENV=$HOME/.ssh/environment
 
 #For X11
