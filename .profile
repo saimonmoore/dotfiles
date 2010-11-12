@@ -1,190 +1,279 @@
+#!/bin/bash
 #
-#stty erase
+# Saimon Moore <http://saimonmoore.net> (with help from the internets).
 
-# Setting the path for MacPorts.
-# Using homebrew
-export PATH=/usr/local/bin:/usr/local/sbin:$PATH
-# export PATH=/opt/local/bin:/opt/local/sbin:/opt/usr/bin:$PATH
-# export PATH=/opt/local/lib/postgresql82/bin:/opt/local/lib/mysql5/bin:/WebKit/WebKitTools/Scripts:$PATH
-export PATH=~/Development/bin:$PATH
-export PATH=$PATH:"/Library/Application Support/VMware Fusion/"
-# export PATH=$PATH:"/opt/android-sdk-mac_x86-1.5_r2/tools"
-export PATH=$PATH:"/opt/PalmSDK/Current/bin"
+# the basics
+: ${HOME=~}
+: ${LOGNAME=$(id -un)}
+: ${UNAME=$(uname)}
 
-export PATH=$PATH:~/.gem/ruby/1.8/bin
+# complete hostnames from this file
+: ${HOSTFILE=~/.ssh/known_hosts}
 
-export PATH=$PATH:~/Development/OpenSource/android-sdk-mac_x86/tools
-export PATH=$PATH:~/Development/OpenSource/github/phonegap/android/bin
-export PATH=$HOME/local/bin:$PATH
-export NODE_PATH="~/local/lib/node"
+# readline config
+: ${INPUTRC=~/.inputrc}
 
-# rubygems
-# export RUBYOPT="rubygems"
+# ----------------------------------------------------------------------
+#  SHELL OPTIONS
+# ----------------------------------------------------------------------
 
-source ~/.amazon_keys
+# bring in system bashrc
+test -r /etc/bashrc &&
+      . /etc/bashrc
 
-# tcl
-# export TCLLIBPATH=/opt/local/lib/tcl8.5
+# notify of bg job completion immediately
+set -o notify
 
-#Macports doesn't setup manpath correctly
-export MANPATH=`/usr/bin/manpath`:~/local/share/man
+# shell opts. see bash(1) for details
+# shopt -s autocd >/dev/null 2>&1
+shopt -s cdspell >/dev/null 2>&1
+shopt -s checkjobs >/dev/null 2>&1
+shopt -s extglob >/dev/null 2>&1
+shopt -s histappend >/dev/null 2>&1
+shopt -s hostcomplete >/dev/null 2>&1
+shopt -s interactive_comments >/dev/null 2>&1
+shopt -u mailwarn >/dev/null 2>&1
+shopt -s no_empty_cmd_completion >/dev/null 2>&1
+#bash4
+shopt -s globstar >/dev/null 2>&1
 
-#Setting the lib path for compiled packages
-#Using homebrew
-# export LD_LIBRARY_PATH=/opt/local/lib:/opt/usr/lib
+# fuck that you have new mail shit
+unset MAILCHECK
 
-#Setting to UTF8
-# export LC_ALL=es_ES.UTF-8
-# export LC_CTYPE=es_ES.UTF-8
+# disable core dumps
+ulimit -S -c 0
 
-#https://wincent.com/issues/1558
-export TERM=xterm-color
+# default umask
+umask 0022
+
+# ----------------------------------------------------------------------
+# PATH
+# ----------------------------------------------------------------------
+
+# we want the various sbins on the path along with /usr/local/bin
+PATH="$PATH:/usr/local/sbin:/usr/sbin:/sbin"
+PATH="/usr/local/bin:$PATH"
+
+# put ~/bin on PATH if you have it
+test -d "$HOME/bin" &&
+PATH="$HOME/bin:$PATH"
+
+# put ~/Development/bin on PATH if you have it
+test -d "$HOME/Development/bin" &&
+PATH="$HOME/Development/bin:$PATH"
+
+# put vmware fusion bin on PATH if you have it
+test -d "/Library/Application Support/VMware Fusion/" &&
+PATH="/Library/Application Support/VMware Fusion/:$PATH"
+
+# put android tools bin on PATH if you have it
+test -d "~/Development/OpenSource/android-sdk-mac_x86/tools" &&
+PATH="~/Development/OpenSource/android-sdk-mac_x86/tools:$PATH"
+
+test -d "~/Development/OpenSource/github/phonegap/android/bin" &&
+PATH="~/Development/OpenSource/github/phonegap/android/bin:$PATH"
+
+test -d "~/local/lib/node" &&
+PATH="~/local/lib/node:$PATH"
 
 
-#from: http://smartic.us/2010/10/27/tune-your-ruby-enterprise-edition-garbage-collection-settings-to-run-tests-faster/
-#needs ree
-export RUBY_HEAP_MIN_SLOTS=1000000
-export RUBY_HEAP_SLOTS_INCREMENT=1000000
-export RUBY_HEAP_SLOTS_GROWTH_FACTOR=1
-export RUBY_GC_MALLOC_LIMIT=1000000000
-export RUBY_HEAP_FREE_MIN=500000
+# ----------------------------------------------------------------------
+# ENVIRONMENT CONFIGURATION
+# ----------------------------------------------------------------------
 
-#For X11
-# # export DISPLAY=:0.0
+# detect interactive shell
+case "$-" in
+    *i*) INTERACTIVE=yes ;;
+    *)   unset INTERACTIVE ;;
+esac
 
+# detect login shell
+case "$0" in
+    -*) LOGIN=yes ;;
+    *)  unset LOGIN ;;
+esac
+
+# enable es_ES locale w/ utf-8 encodings if not already configured
+: ${LANG:="es_ES.UTF-8"}
+: ${LANGUAGE:="es"}
+: ${LC_CTYPE:="es_ES.UTF-8"}
+: ${LC_ALL:="es_ES.UTF-8"}
+export LANG LANGUAGE LC_CTYPE LC_ALL
+
+# always use PASSIVE mode ftp
+: ${FTP_PASSIVE:=1}
+export FTP_PASSIVE
+
+# ignore backups, CVS directories, python bytecode, vim swap files
+FIGNORE="~:CVS:#:.pyc:.swp:.swa:apache-solr-*"
 # Bash History Settings
-export HISTCONTROL=erasedups
-export HISTSIZE=10000
-# export HISTIGNORE="&:ls:[ \t]*:[bf]g:exit:stealth"
-export HISTIGNORE="&:ls:[bf]g:exit:stealth:fg*"
+# HISTCONTROL=erasedups
+HISTCONTROL=ignoreboth
+HISTSIZE=10000
+# HISTIGNORE="&:ls:[ \t]*:[bf]g:exit:stealth"
+HISTIGNORE="&:ls:[bf]g:exit:stealth:fg*"
 bind '"\C-f": "fg %-\n"'
 # bind '"\\C-o": "open "$(pbpaste)""'
 # bind '"\\C-g": "open http://google.com/search?q=$(pbpaste)"'
 
-shopt -s histappend
 PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
+
+LD_LIBRARY_PATH=/usr/local/lib/:/opt/local/lib:/opt/usr/lib
+
+MANPATH=`/usr/bin/manpath`:~/local/share/man:/usr/local/share/man
+
+#https://wincent.com/issues/1558
+TERM=xterm-color
+
+#from: http://smartic.us/2010/10/27/tune-your-ruby-enterprise-edition-garbage-collection-settings-to-run-tests-faster/
+#needs ree
+RUBY_HEAP_MIN_SLOTS=1000000
+RUBY_HEAP_SLOTS_INCREMENT=1000000
+RUBY_HEAP_SLOTS_GROWTH_FACTOR=1
+RUBY_GC_MALLOC_LIMIT=1000000000
+RUBY_HEAP_FREE_MIN=500000
+
+SSH_ENV=$HOME/.ssh/environment
+
+#For X11
+# DISPLAY=:0.0
+
+# rubygems
+# export RUBYOPT="rubygems"
+
+test -r ~/.amazon_keys &&
+      . ~/.amazon_keys
+
+# ----------------------------------------------------------------------
+# PAGER / EDITOR
+# ----------------------------------------------------------------------
+
+# See what we have to work with ...
+HAVE_VIM=$(command -v vim)
+HAVE_GVIM=$(command -v gvim)
+HAVE_MVIM=$(command -v mvim) # macvim
+HAVE_TVIM=$(command -v tvim) #vim in terminal
+
+# EDITOR
+test -n "$HAVE_VIM" &&
+EDITOR=vim ||
+EDITOR=vi
+export EDITOR
+
+SVN_EDITOR=$EDITOR
+GIT_EDITOR=$EDITOR
+TEXEDIT='$EDITOR +%d %s'
+LESSEDIT='$EDITOR ?lm+%lm. %f'
+
+# PAGER
+if test -n "$(command -v less)" ; then
+    PAGER="less -FirSwX"
+    MANPAGER="less -FiRswX"
+else
+    PAGER=more
+    MANPAGER="$PAGER"
+fi
+export PAGER MANPAGER
+
+# Ack
+ACK_PAGER="$PAGER"
+
+# ----------------------------------------------------------------------
+# PROMPT
+# ----------------------------------------------------------------------
+
+RED="\[\033[0;31m\]"
+BROWN="\[\033[0;33m\]"
+GREY="\[\033[0;97m\]"
+BLUE="\[\033[0;34m\]"
+PS_CLEAR="\[\033[0m\]"
+SCREEN_ESC="\[\033k\033\134\]"
+
+if [ "$LOGNAME" = "root" ]; then
+    COLOR1="${RED}"
+    COLOR2="${BROWN}"
+    P="#"
+elif hostname | grep -q 'teambox\.com'; then
+    TEAMBOX=yep
+    COLOR1="\[\e[0;94m\]"
+    COLOR2="\[\e[0;92m\]"
+    P="\$"
+else
+    COLOR1="${BLUE}"
+    COLOR2="${BROWN}"
+    P="\$"
+fi
+
+prompt_simple() {
+    unset PROMPT_COMMAND
+    PS1="[\u@\h:\w]\$ "
+    PS2="> "
+}
+
+prompt_compact() {
+    unset PROMPT_COMMAND
+    PS1="${COLOR1}${P}${PS_CLEAR} "
+    PS2="> "
+}
+
+prompt_color() {
+    PS1="${GREY}[${COLOR1}\u${GREY}@${COLOR2}\h${GREY}:${COLOR1}\W${GREY}]${COLOR2}$P${PS_CLEAR} "
+    PS2="\[[33;1m\]continue \[[0m[1m\]> "
+}
 
 #prompt
 # activate once git has installed
 # export PS1='\u@\h \W$(__git_ps1 " (%s)")\$ '
 #includes current ruby and git branch
-export PS1="\u@\h \W\$(~/.rvm/bin/rvm-prompt)\$(__git_ps1 '(%s)') $ "
 
-
-# Lists all files modified in current branch since it forked from master
-# search for changes only within file changed in this branch
-# Usage: rak 'query' `git-changeset`
-function git-changeset {
-  git log --name-only --pretty=format:''  master..`__git_ps1 "%s"` | tr -s '\n' | uniq | sort -u
+prompt_git() {
+    if [ -f  /usr/local/Cellar/git/1.7.3.2/etc/bash_completion.d/git-completion.bash ]; then
+      .  /usr/local/Cellar/git/1.7.3.2/etc/bash_completion.d/git-completion.bash;
+      # PS1='[\h \W$(__git_ps1 " (%s)")]\$ ';
+      PS1="\u@\h \W\$(~/.rvm/bin/rvm-prompt)\$(__git_ps1 '(%s)') $ "
+    fi
 }
 
-#Generic editor
-# export EDITOR='mate -w'
-export EDITOR='vim'
-# export SVN_EDITOR='mate -w'
-export SVN_EDITOR='vim'
-# export GIT_EDITOR='mate -wl1'
-export GIT_EDITOR='vim'
-# export TEXEDIT='mate -w -l %d "%s"'
-export TEXEDIT='vim +%d %s'
-# export LESSEDIT='mate -l %lm %f'
-export LESSEDIT='vim ?lm+%lm. %f'
+# ----------------------------------------------------------------------
+# MACOS X / DARWIN SPECIFIC
+# ----------------------------------------------------------------------
 
+if [ "$UNAME" = Darwin ]; then
+    # put ports on the paths if /opt/local exists
+    test -x /opt/local -a ! -L /opt/local && {
+        PORTS=/opt/local
 
-SSH_ENV=$HOME/.ssh/environment
+        # setup the PATH and MANPATH
+        PATH="$PATH:$PORTS/bin:$PORTS/sbin"
+        MANPATH="$MANPATH:$PORTS/share/man"
 
-function start_agent {
-     echo "Initializing new SSH agent..."
-     /usr/bin/ssh-agent | sed 's/^echo/#echo/' > ${SSH_ENV}
-     echo succeeded
-     chmod 600 ${SSH_ENV}
-     . ${SSH_ENV} > /dev/null
-     /usr/bin/ssh-add;
-}
+        # nice little port alias
+        alias port="sudo nice -n +18 $PORTS/bin/port"
+    }
 
-# Source SSH settings, if applicable
-if [ -f "${SSH_ENV}" ]; then
-     . ${SSH_ENV} > /dev/null
-     ps -x | grep "^ *${SSH_AGENT_PID}" | grep ssh-agent$ > /dev/null || {
-         start_agent;
-     }
-else
-     start_agent;
+    test -x /usr/pkg -a ! -L /usr/pkg && {
+        PATH=":$PATH:/usr/pkg/sbin:/usr/pkg/bin"
+        MANPATH="$MANPATH:/usr/pkg/share/man"
+    }
+
+    # setup java environment. puke.
+    JAVA_HOME="/System/Library/Frameworks/JavaVM.framework/Home"
+    export JAVA_HOME
+
 fi
 
-#Aliases
-#ls
-alias ls='ls -FG'
-alias ll='ls -lhG'
-alias la='ls -A'
-alias lsd='ls -d */'
-alias lx='ls -X'
+# ----------------------------------------------------------------------
+# ALIASES / FUNCTIONS
+# ----------------------------------------------------------------------
 
 #Navigation
 alias u='cd ..'
 alias h='cd ~'
 
-#projects
-alias pr="cd ~/Development/Projects"
-alias fr="cd ~/Development/Clients"
-alias os="cd ~/Development/OpenSource"
-alias ghb="cd ~/Development/OpenSource/github"
-alias gfk="cd ~/Development/OpenSource/forks"
-
-alias rbmine="/Applications/RubyMine\ 2.0.app/Contents/MacOS/rubymine > /dev/null 2> /dev/null &"
-
-#ruby
-alias rb="ruby"
-alias irb="irb --prompt simple"
-alias tm=mate
-alias tmw="tm -w "
-# alias e=mate
-alias e='vim'
-
-# nginx/passenger/rvm
-# wrappers around rvm to copy current ruby path location to ~/.rvm_ruby_binary
-# This file is used inside ruby wrapper to report the current ruby interpreter to use for phusion passenger.
-alias enginxportfile="mate -w /opt/local/var/macports/sources/rsync.macports.org/release/ports/www/nginx/Portfile"
-
-alias start_nginx='launchctl load -w ~/Library/LaunchAgents/org.nginx.plist'
-alias stop_nginx='launchctl unload -w ~/Library/LaunchAgents/org.nginx.plist'
-alias restart_nginx='launchctl unload -w ~/Library/LaunchAgents/org.nginx.plist; launchctl load -w ~/Library/LaunchAgents/org.nginx.plist'
-
-alias start_nginx19='sudo launchctl load -w /Library/LaunchDaemons/net.nginx-ruby-1.9.plist'
-alias stop_nginx19='sudo launchctl unload -w /Library/LaunchDaemons/net.nginx-ruby-1.9.plist'
-alias restart_nginx19='sudo launchctl unload -w /Library/LaunchDaemons/net.nginx-ruby-1.9.plist; sudo launchctl load -w /Library/LaunchDaemons/net.nginx-ruby-1.9.plist'
-
-alias start_nginx192='sudo launchctl load -w /Library/LaunchDaemons/net.nginx-ruby-1.9.2.plist'
-alias stop_nginx192='sudo launchctl unload -w /Library/LaunchDaemons/net.nginx-ruby-1.9.2.plist'
-alias restart_nginx192='sudo launchctl unload -w /Library/LaunchDaemons/net.nginx-ruby-1.9.2.plist; sudo launchctl load -w /Library/LaunchDaemons/net.nginx-ruby-1.9.2.plist'
-
-alias start_redis='sudo launchctl load -w /Library/LaunchDaemons/antirez.redis.plist'
-alias stop_redis='sudo launchctl unload -w /Library/LaunchDaemons/antirez.redis.plist'
-alias restart_redis='sudo launchctl unload -w /Library/LaunchDaemons/antirez.redis.plist; sudo launchctl load -w /Library/LaunchDaemons/antirez.redis.plist'
-
-#any other rubies, follow this pattern
-#alias passenger-fair2-ruby="source ~/.profile ; rvm 1.9.1%fair2 ; echo \$rvm_ruby_binary > ~/.rvm_ruby_binary; echo '$(gem env gemdir)' > ~/.rvm_gem_dir; nginx-set-passenger-gem-dir; restart_nginx"
-#alias passenger-bootstrip-ruby="source ~/.profile ; rvm ree-1.8.7%bootstrip ; echo \$rvm_ruby_binary > ~/.rvm_ruby_binary; echo '$(gem env gemdir)' > ~/.rvm_gem_dir; nginx-set-passenger-gem-dir; restart_nginx"
-#only system ruby
-#alias passenger-system-ruby="source ~/.profile ; rvm system ; echo '$(which ruby)' > ~/.rvm_ruby_binary; echo '$(gem env gemdir)' > ~/.rvm_gem_dir; GEM_PATH=$(gem env gemdir); nginx-set-passenger-gem-dir; restart_nginx"
-#alias nginx-set-passenger-gem-dir='sudo sed "s:passenger_root.*;:passenger_root $GEM_PATH\/gems\/passenger-2.2.5;:g" /opt/local/etc/nginx/nginx.conf > /tmp/nginx_sed.conf && sudo mv /tmp/nginx_sed.conf /opt/local/etc/nginx/nginx.conf'
-
-#mysql
-source ~/.mysql_aliases
-
-alias start_mysql='sudo launchctl load -w /Library/LaunchDaemons/org.macports.mysql5.plist'
-alias stop_mysql='sudo launchctl unload -w /Library/LaunchDaemons/org.macports.mysql5.plist'
-alias restart_mysql='sudo launchctl unload -w /Library/LaunchDaemons/org.macports.mysql5.plist; sudo launchctl load -w /Library/LaunchDaemons/org.macports.mysql5.plist'
-
-#dotime
-source ~/.dotime_aliases
-
-#rhino
-alias js="java org.mozilla.javascript.tools.shell.Main"
-alias jsbeautify="java org.mozilla.javascript.tools.shell.Main /Users/saimon/Development/bin/js-beautify/beautify-cl.js"
-alias noderb="rlwrap /opt/usr/bin/node-repl"
-
 #bash
+# disk usage with human sizes and minimal depth
+alias du1='du -h --max-depth=1'
+alias fn='find . -name'
 alias p="ps axww | grep "
 alias px="ps -ax -m -o pid,%cpu,rss,command | grep "
 alias k="kill -9 "
@@ -200,8 +289,90 @@ alias l='less'
 alias ec='e ~/Documents/commands.txt'
 alias sz="du -sk ./* | sort -n | awk 'BEGIN{ pref[1]=\"K\"; pref[2]=\"M\"; pref[3]=\"G\";} { total = total + \$1; x = \$1; y = 1; while( x > 1024 ) { x = (x + 1023)/1024; y++; } printf(\"%g%s\t%s\n\",int(x*10)/10,pref[y],\$2); } END { y = 1; while( total > 1024 ) { total = (total + 1023)/1024; y++; } printf(\"Total: %g%s\n\",int(total*10)/10,pref[y]); }'"
 
-#Misc
-alias clog="clarity /var/log --include '*/**'"
+#editors
+alias tm=mate
+alias tmw="tm -w "
+
+# quicklook
+alias ql="qlmanage -p 2>/dev/null"
+
+#projects
+alias pr="cd ~/Development/Projects"
+alias fr="cd ~/Development/Clients"
+alias os="cd ~/Development/OpenSource"
+alias ghb="cd ~/Development/OpenSource/github"
+alias gfk="cd ~/Development/OpenSource/forks"
+
+#ruby
+alias irb="irb --prompt simple"
+
+#ssh
+alias pssh="ssh -p 8888 "
+alias pscp="scp -P 8888 "
+
+# Subversion
+alias sup='svn update'
+alias sst='svn status'
+alias sco='svn commit'
+alias sd='svn diff | gedit'
+alias slog='svn log | less'
+alias sex='svn export'
+alias signore='svn propedit svn:ignore'
+alias sexternal='svn propedit svn:externals'
+
+# Rails
+alias ss='./script/server'
+alias sc='./script/console'
+alias sg='./script/generate'
+alias sp='./script/plugin'
+
+# Git
+if test -n "$(command -v hub)" ; then
+  alias git='hub'
+fi
+alias gscore='git log --numstat | awk -f /Users/saimon/bin/git_score.awk'
+alias ga='git add'
+alias gs='git status'
+alias gca='git commit -a'
+alias gc='git commit'
+alias gb='git branch -a'
+alias gps='git push'
+alias gpl='git pull'
+alias gch='git checkout'
+alias gm='git merge'
+alias gd='git diff'
+alias gl='git log'
+alias fixup="git commit -m \"fixup! $(git log -1 --format='%s')\""
+alias squash="git commit -m \"squash! $(git log -1 --format='%s')\""
+alias gri="git rebase --interactive --autosquash"
+alias grm='git rebase master'
+alias gnp='git-notpushed'
+alias gh='git log --pretty=format:"%ai %s [%an]" > HISTORY'
+alias fcm='git rev-list master |tail -n 1'
+alias lcm='git rev-parse HEAD'
+alias gfm="git status | grep modified | awk '{print \$3}' | head -n"
+alias rmcachedassets="gs | grep public | awk '{print \$2}' | xargs rm"
+alias gcps="gca && gps"
+alias hns="hack && ship"
+
+#nginx
+alias start_nginx='launchctl load -w ~/Library/LaunchAgents/org.nginx.plist'
+alias stop_nginx='launchctl unload -w ~/Library/LaunchAgents/org.nginx.plist'
+alias restart_nginx='launchctl unload -w ~/Library/LaunchAgents/org.nginx.plist; launchctl load -w ~/Library/LaunchAgents/org.nginx.plist'
+
+#mysql
+source ~/.mysql_aliases
+
+#dotime
+source ~/.dotime_aliases
+
+#rhino
+alias js="java org.mozilla.javascript.tools.shell.Main"
+alias jsbeautify="java org.mozilla.javascript.tools.shell.Main /Users/saimon/Development/bin/js-beautify/beautify-cl.js"
+
+#node
+#TODO: Use /usr/local/bin
+alias noderb="rlwrap ~/local/bin/node-repl"
 
 #Virtual Machines
 #vmware
@@ -234,8 +405,26 @@ alias vbbootstripup="pushd ~/Development/Projects/bootstrip/src; bundle exec vag
 alias vbbootstripdown="pushd ~/Development/Projects/bootstrip/src; bundle exec vagrant suspend; popd"
 alias vbbootstripssh="pushd ~/Development/Projects/bootstrip/src; bundle exec vagrant ssh; popd"
 
-# quicklook
-alias ql="qlmanage -p 2>/dev/null"
+# Functions
+
+function start_agent {
+     echo "Initializing new SSH agent..."
+     /usr/bin/ssh-agent | sed 's/^echo/#echo/' > ${SSH_ENV}
+     echo succeeded
+     chmod 600 ${SSH_ENV}
+     . ${SSH_ENV} > /dev/null
+     /usr/bin/ssh-add;
+}
+
+# Source SSH settings, if applicable
+if [ -f "${SSH_ENV}" ]; then
+     . ${SSH_ENV} > /dev/null
+     ps -x | grep "^ *${SSH_AGENT_PID}" | grep ssh-agent$ > /dev/null || {
+         start_agent;
+     }
+else
+     start_agent;
+fi
 
 #rvm
 function rvmd() {
@@ -255,61 +444,12 @@ function decryptaes()
 
 function stealth() { "$@"; }
 
-#ssh
-alias pssh="ssh -p 8888 "
-alias pscp="scp -P 8888 "
-
-# Autotest
-alias att='autotest'
-
-# Subversion
-alias sup='svn update'
-alias sst='svn status'
-alias sco='svn commit'
-alias sd='svn diff | gedit'
-alias slog='svn log | less'
-alias sex='svn export'
-alias signore='svn propedit svn:ignore'
-alias sexternal='svn propedit svn:externals'
-
-# Rails
-alias ss='./script/server'
-alias sc='./script/console'
-alias sg='./script/generate'
-alias sp='./script/plugin'
-
-# Gems
-alias cap1="`which cap` _1.4.2_"
-alias sake="rake -g"
-
-# Git
-alias git='hub'
-alias gscore='git log --numstat | awk -f /Users/saimon/bin/git_score.awk'
-alias ga='git add'
-alias gs='git status'
-alias gca='git commit -a'
-alias gc='git commit'
-alias gb='git branch -a'
-alias gps='git push'
-alias gpl='git pull'
-alias gch='git checkout'
-alias gm='git merge'
-alias gd='git diff'
-alias gl='git log'
-alias grm='git rebase master'
-alias gnp='git-notpushed'
-alias gh='git log --pretty=format:"%ai %s [%an]" > HISTORY'
-alias fcm='git rev-list master |tail -n 1'
-alias lcm='git rev-parse HEAD'
-alias gfm="git status | grep modified | awk '{print \$3}' | head -n"
-alias rmcachedassets="gs | grep public | awk '{print \$2}' | xargs rm"
-alias gcps="gca && gps"
-alias hns="hack && ship"
-alias fixup='git commit -m \"fixup! $(git log -1 --format='\\''%s'\\'' $@)\"'
-alias squash='git commit -m \"squash! $(git log -1 --format='\\''%s'\\'' $@)\"'
-alias gri="git rebase --interactive --autosquash"
-
-# Functions
+# Lists all files modified in current branch since it forked from master
+# search for changes only within file changed in this branch
+# Usage: rak 'query' `git-changeset`
+function git-changeset {
+  git log --name-only --pretty=format:''  master..`__git_ps1 "%s"` | tr -s '\n' | uniq | sort -u
+}
 
 function gchm() {
   sh -c "rake git:branch:checkout_with_migrations[$1]"
@@ -320,7 +460,7 @@ function rjson() {
 }
 
 function s() {
-  cd ~/dev/$1
+  cd ~/Development/$1
   screen -Uc ~/.screenrc -S dev@artemis
 }
 
@@ -385,17 +525,49 @@ sup_log()
   fi
 }
 
-#completion
 
-# activate once installed
+# push SSH public key to another box
+push_ssh_cert() {
+    local _host
+    test -f ~/.ssh/id_dsa.pub || ssh-keygen -t dsa
+    for _host in "$@";
+    do
+        echo $_host
+        ssh $_host 'cat >> ~/.ssh/authorized_keys' < ~/.ssh/id_dsa.pub
+    done
+}
+
+
+
+# ----------------------------------------------------------------------
+# BASH COMPLETION
+# ----------------------------------------------------------------------
+
+test -z "$BASH_COMPLETION" && {
+    bash=${BASH_VERSION%.*}; bmajor=${bash%.*}; bminor=${bash#*.}
+    test -n "$PS1" && test $bmajor -gt 1 && {
+        # search for a bash_completion file to source
+        for f in /usr/local/etc/bash_completion \
+                 /usr/pkg/etc/bash_completion \
+                 /opt/local/etc/bash_completion \
+                 /etc/bash_completion
+        do
+            test -f $f && {
+                . $f
+                break
+            }
+        done
+    }
+    unset bash bmajor bminor
+}
+
+# override and disable tilde expansion
+_expand() {
+    return 0
+}
 
 #rake
 # complete -C /opt/local/bin/rake-completion.rb -o default rake
-
-#bash
-if [ -f /opt/local/etc/bash_completion ]; then
-    . /opt/local/etc/bash_completion
-fi
 
 # tab completion for ssh hosts
 # http://drawohara.tumblr.com/post/6584031
@@ -408,18 +580,6 @@ SSH_COMPLETE=( $(cat ~/.ssh/known_hosts | \
 
 complete -o default -W "${SSH_COMPLETE[*]}" ssh
 complete -o default -W "${SSH_COMPLETE[*]}" pssh
-
-# _mategem()
-# {
-#     local curw
-#     COMPREPLY=()
-#     curw=${COMP_WORDS[COMP_CWORD]}
-#     local gems="$(gem environment gemdir)/gems"
-#     COMPREPLY=($(compgen -W '$(ls $gems)' -- $curw));
-#     return 0
-# }
-# complete -F _mategem -o dirnames mategem
-
 
 # _complete_git() {
 #   if [ -d .git ]; then
@@ -435,9 +595,46 @@ complete -o default -W "${SSH_COMPLETE[*]}" pssh
 #
 # source ~/.git-completion.sh
 
-#********************** BASH 4 only ***********************
-#shopt -s globstar autocd
+# ----------------------------------------------------------------------
+# LS AND DIRCOLORS
+# ----------------------------------------------------------------------
+
+# we always pass these to ls(1)
+LS_COMMON="-hBG"
+
+# if the dircolors utility is available, set that up to
+dircolors="$(type -P gdircolors dircolors | head -1)"
+test -n "$dircolors" && {
+    COLORS=/etc/DIR_COLORS
+    test -e "/etc/DIR_COLORS.$TERM"   && COLORS="/etc/DIR_COLORS.$TERM"
+    test -e "$HOME/.dircolors"        && COLORS="$HOME/.dircolors"
+    test ! -e "$COLORS"               && COLORS=
+    eval `$dircolors --sh $COLORS`
+}
+unset dircolors
+
+# setup the main ls alias if we've established common args
+test -n "$LS_COMMON" &&
+alias ls="command ls $LS_COMMON"
+
+# these use the ls aliases above
+alias ll='ls -lhG'
+alias l.="ls -d .*"
+# alias ls='ls -FG'
+alias la='ls -A'
+alias lx='ls -X'
+
+
+
+# -------------------------------------------------------------------
+# USER SHELL ENVIRONMENT
+# -------------------------------------------------------------------
+
+# Use the color prompt by default when interactive
+test -n "$PS1" &&
+prompt_git
+
 # rvm-install added line:
-#set -x
-if [[ -s /Users/saimon/.rvm/scripts/rvm ]] ; then source /Users/saimon/.rvm/scripts/rvm ; fi
-#set +x
+if [[ -s ~/.rvm/scripts/rvm ]] ; then source ~/.rvm/scripts/rvm ; fi
+
+# vim: ts=4 sts=4 shiftwidth=4 expandtab
