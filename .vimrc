@@ -144,6 +144,23 @@ vmap <C-c>  :w !pbcopy<CR><CR>
 
 nnoremap CC :!bundle exec cucumber features
 
+" word swapping functions
+"
+" To use gw to swap the current word with the next, without changing cursor position: (See note.)
+:nnoremap <silent> gw "_yiw:s/\(\%#\w\+\)\(\_W\+\)\(\w\+\)/\3\2\1/<CR><c-o><c-l>
+" To use gl to swap the current word with the previous, keeping cursor on
+" current word: (This feels like "pushing" the word to the left.)
+:nnoremap <silent> gl "_yiw?\w\+\_W\+\%#<CR>:s/\(\%#\w\+\)\(\_W\+\)\(\w\+\)/\3\2\1/<CR><c-o><c-l>
+
+" To use gr to swap the current word with the next, keeping cursor on current word: (This feels like "pushing" the word to the right.)
+:nnoremap <silent> gr "_yiw:s/\(\%#\w\+\)\(\_W\+\)\(\w\+\)/\3\2\1/<CR><c-o>/\w\+\_W\+<CR><c-l>
+
+" To use g{ to swap the current paragraph with the next:
+:nnoremap g{ {dap}p{
+
+" To use gc to swap the current character with the next, without changing the cursor position:
+:nnoremap <silent> gc xph
+
 " Toggle Scratch pad
 function! ToggleScratch()
   if expand('%') == g:ScratchBufferName
