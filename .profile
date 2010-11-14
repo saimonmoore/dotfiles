@@ -573,19 +573,19 @@ SSH_COMPLETE=( $(cat ~/.ssh/known_hosts | \
 complete -o default -W "${SSH_COMPLETE[*]}" ssh
 complete -o default -W "${SSH_COMPLETE[*]}" pssh
 
-# _complete_git() {
-#   if [ -d .git ]; then
-#     branches=`git branch -a | cut -c 3-`
-#     tags=`git tag`
-#     cur="${COMP_WORDS[COMP_CWORD]}"
-#     COMPREPLY=( $(compgen -W "${branches} ${tags}" -- ${cur}) )
-#   fi
-# }
-# complete -F _complete_git git checkout
-# complete -F _complete_git gch
-# complete -F _complete_git gchm
-#
-# source ~/.git-completion.sh
+_complete_git() {
+  if [ -d .git ]; then
+    branches=`git branch -a | cut -c 3-`
+    tags=`git tag`
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    COMPREPLY=( $(compgen -W "${branches} ${tags}" -- ${cur}) )
+  fi
+}
+complete -F _complete_git git checkout
+complete -F _complete_git gch
+complete -F _complete_git gchm
+
+source ~/.git-completion.sh
 
 # ----------------------------------------------------------------------
 # LS AND DIRCOLORS
