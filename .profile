@@ -73,8 +73,8 @@ PATH="~/Development/OpenSource/android-sdk-mac_x86/tools:$PATH"
 test -d "~/Development/OpenSource/github/phonegap/android/bin" &&
 PATH="~/Development/OpenSource/github/phonegap/android/bin:$PATH"
 
-test -d "~/local/lib/node" &&
-PATH="~/local/lib/node:$PATH"
+test -d "~/local/bin" &&
+PATH="~/local/bin:$PATH"
 
 
 # ----------------------------------------------------------------------
@@ -148,7 +148,7 @@ HAVE_TVIM=$(command -v tvim) #vim in terminal
 
 # EDITOR
 test -n "$HAVE_VIM" &&
-EDITOR=vim ||
+EDITOR="mvim -f" ||
 EDITOR=vi
 export EDITOR
 
@@ -261,6 +261,13 @@ fi
 #Navigation
 alias u='cd ..'
 alias h='cd ~'
+alias pop='popd'
+
+# changing directory to code project
+function c { pushd ~/Development/Clients/$1; }
+function cps { pushd ~/Development/Projects/$1; }
+function cgh { pushd ~/Development/OpenSource/github/$1; }
+function cfk { pushd ~/Development/OpenSource/forks/$1; }
 
 #bash
 # disk usage with human sizes and minimal depth
@@ -268,9 +275,9 @@ alias du1='du -h --max-depth=1'
 alias fn='find . -name'
 alias p="ps axww | grep "
 alias px="ps -ax -m -o pid,%cpu,rss,command | grep "
-alias k="kill -9 "
-alias r="history | grep "
-alias eb="e ~/.profile"
+alias k="kill -9"
+alias r="history | grep"
+alias eb="vim ~/.profile"
 alias ab="source ~/.profile"
 alias eh="sudo vim /etc/hosts"
 alias ah="sudo dscacheutil -flushcache" #leopard
@@ -285,8 +292,9 @@ alias sz="du -sk ./* | sort -n | awk 'BEGIN{ pref[1]=\"K\"; pref[2]=\"M\"; pref[
 alias tm=mate
 alias tmw="tm -w "
 
-# quicklook
+# osx
 alias ql="qlmanage -p 2>/dev/null"
+alias preview='open -a Preview -f'
 
 #projects
 alias pr="cd ~/Development/Projects"
@@ -297,10 +305,17 @@ alias gfk="cd ~/Development/OpenSource/forks"
 
 #ruby
 alias irb="irb --prompt simple"
+alias bspec="bundle exec spec"
+alias bcucumber="bundle exec cucumber"
+alias brake="bundle exec rake"
+alias birb="bundle exec irb"
+alias be="bundle exec"
+alias cleardb='be rake db:drop db:create db:schema:load db:seed && be rake db:test:clone'
 
 #ssh
 alias pssh="ssh -p 8888 "
 alias pscp="scp -P 8888 "
+alias tunnel='ssh -D 8888 -f -C -q -N'
 
 # Subversion
 alias sup='svn update'
@@ -322,17 +337,32 @@ alias sp='./script/plugin'
 if test -n "$(command -v hub)" ; then
   alias git='hub'
 fi
+alias gplr='git pull --rebase'
+alias gpl='git pull'
+alias gp='git push'
+alias gd='git diff'
+alias gdc='git diff --cached'
+alias gde='gd | vim'
+alias gdce='gdc | vim'
+alias gc='git commit -v'
+alias gca='git commit -va'
+alias gb='git branch -v'
+alias gss='git status -sb'
+alias grm="git status | grep deleted | awk '{print \$3}' | xargs git rm"
 alias gscore='git log --numstat | awk -f /Users/saimon/bin/git_score.awk'
 alias ga='git add'
 alias gs='git status'
-alias gca='git commit -a'
-alias gc='git commit'
-alias gb='git branch -a'
 alias gps='git push'
-alias gpl='git pull'
-alias gch='git checkout'
+
+function gch {
+  if [ -z "$1" ]; then
+    git checkout master
+  else
+    git checkout $1
+  fi
+}
+
 alias gm='git merge'
-alias gd='git diff'
 alias gl='git log'
 alias fixup="git commit -m \"fixup! $(git log -1 --format='%s')\""
 alias squash="git commit -m \"squash! $(git log -1 --format='%s')\""
@@ -344,13 +374,21 @@ alias fcm='git rev-list master |tail -n 1'
 alias lcm='git rev-parse HEAD'
 alias gfm="git status | grep modified | awk '{print \$3}' | head -n"
 alias rmcachedassets="gs | grep public | awk '{print \$2}' | xargs rm"
-alias gcps="gca && gps"
-alias hns="hack && ship"
+
+#redis
+alias start_redis='launchctl load -w ~/Library/LaunchAgents/io.redis.redis-server.plist'
+alias stop_redis='launchctl unload -w ~/Library/LaunchAgents/io.redis.redis-server.plist'
+alias restart_redis='launchctl unload -w ~/Library/LaunchAgents/io.redis.redis-server.plist; sudo launchctl load -w ~/Library/LaunchAgents/io.redis.redis-server.plist'
+
+#memcached
+alias start_memcached='launchctl load -w ~/Library/LaunchAgents/com.danga.memcached.plist'
+alias stop_memcached='launchctl unload -w ~/Library/LaunchAgents/com.danga.memcached.plist'
+alias restart_memcached='launchctl unload -w ~/Library/LaunchAgents/com.danga.memcached.plist; launchctl load -w ~/Library/LaunchAgents/com.danga.memcached.plist'
 
 #nginx
-alias start_nginx='launchctl load -w ~/Library/LaunchAgents/org.nginx.plist'
-alias stop_nginx='launchctl unload -w ~/Library/LaunchAgents/org.nginx.plist'
-alias restart_nginx='launchctl unload -w ~/Library/LaunchAgents/org.nginx.plist; launchctl load -w ~/Library/LaunchAgents/org.nginx.plist'
+alias start_nginx='sudo launchctl load -w ~/Library/LaunchAgents/org.nginx.plist'
+alias stop_nginx='sudo launchctl unload -w ~/Library/LaunchAgents/org.nginx.plist'
+alias restart_nginx='sudo launchctl unload -w ~/Library/LaunchAgents/org.nginx.plist; sudo launchctl load -w ~/Library/LaunchAgents/org.nginx.plist'
 
 #mysql
 source ~/.mysql_aliases
@@ -398,6 +436,14 @@ alias vbbootstripdown="pushd ~/Development/Projects/bootstrip/src; bundle exec v
 alias vbbootstripssh="pushd ~/Development/Projects/bootstrip/src; bundle exec vagrant ssh; popd"
 
 # Functions
+
+# usage:
+#   $ superblame Mislav [<from>..<to>]
+function superblame {
+  git log --format=%h --author=$1 $2 | \
+    xargs -L1 -ISHA git diff --shortstat 'SHA^..SHA' app config/environment* config/initializers/ public/stylesheets/ | \
+    ruby -e 'n=Hash.new(0); while gets; i=0; puts $_.gsub(/\d+/){ n[i+=1] += $&.to_i }; end' | tail -n1
+}
 
 function start_agent {
      echo "Initializing new SSH agent..."
@@ -558,9 +604,6 @@ _expand() {
     return 0
 }
 
-#rake
-# complete -C /opt/local/bin/rake-completion.rb -o default rake
-
 # tab completion for ssh hosts
 # http://drawohara.tumblr.com/post/6584031
 SSH_COMPLETE=( $(cat ~/.ssh/known_hosts | \
@@ -581,11 +624,16 @@ _complete_git() {
     COMPREPLY=( $(compgen -W "${branches} ${tags}" -- ${cur}) )
   fi
 }
-complete -F _complete_git git checkout
-complete -F _complete_git gch
-complete -F _complete_git gchm
 
-source ~/.git-completion.sh
+complete -F _complete_git gch
+
+source ~/dotfiles/completion_scripts/git_completion
+complete -C ~/dotfiles/completion_scripts/rake_completion -o default rake
+complete -C ~/dotfiles/completion_scripts/client_completion -o default c
+complete -C ~/dotfiles/completion_scripts/project_completion -o default cps
+complete -C ~/dotfiles/completion_scripts/github_completion -o default cgh
+complete -C ~/dotfiles/completion_scripts/forks_completion -o default cfk
+complete -C ~/dotfiles/completion_scripts/capistrano_completion -o default cap
 
 # ----------------------------------------------------------------------
 # LS AND DIRCOLORS
