@@ -19,7 +19,7 @@ class Object
 end
 
 # 25 entries in the list
-IRB.conf[:SAVE_HISTORY] = 200
+IRB.conf[:SAVE_HISTORY] = 1000
 
 # Store results in home directory with specified file name
 IRB.conf[:HISTORY_FILE] = "#{ENV['HOME']}/.irb-history"
@@ -136,8 +136,8 @@ class InteractiveEditor
 end
 
 class << self
-  def vi(name=nil)
-     InteractiveEditor.edit('vi', name)
+  def vim(name=nil)
+     InteractiveEditor.edit('vim', name)
   end
 
   def gvim(name=nil)
@@ -185,3 +185,33 @@ class String
   end
 end
 
+class Object
+  # list methods which aren't in superclass
+  def local_methods(obj = self)
+    (obj.methods - obj.class.superclass.instance_methods).sort
+  end
+
+  # print documentation
+  #
+  #   ri 'Array#pop'
+  #   Array.ri
+  #   Array.ri :pop
+  #   arr.ri :pop
+  def ri(method = nil)
+    unless method && method =~ /^[A-Z]/ # if class isn't specified
+      klass = self.kind_of?(Class) ? name : self.class.name
+      method = [klass, method].compact.join('#')
+    end
+    puts `ri '#{method}'`
+  end
+end
+
+def copy(str)
+  IO.popen('pbcopy', 'w') { |f| f << str.to_s }
+end
+
+def paste
+  `pbpaste`
+end
+
+load File.dirname(__FILE__) + '/.railsrc' if defined?(Rails)
