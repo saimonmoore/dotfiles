@@ -803,5 +803,5 @@ prompt_git
 export PATH="$HOME/.rbenv/bin:$PATH"
 eval "$(rbenv init -)"
 
-export RBENV_VERSION='1.9.3-p194-perf'
+export RBENV_VERSION='1.9.3-p327-perf'
 # vim: ts=4 sts=4 shiftwidth=4 expandtab
