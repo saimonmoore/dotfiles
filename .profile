@@ -488,9 +488,6 @@ alias restart_elastic='stop_elastic;start_elastic'
 #mysql
 source ~/.mysql_aliases
 
-#dotime
-source ~/.dotime_aliases
-
 #rhino
 alias js="java org.mozilla.javascript.tools.shell.Main"
 alias jsbeautify="java org.mozilla.javascript.tools.shell.Main /Users/saimon/Development/bin/js-beautify/beautify-cl.js"
