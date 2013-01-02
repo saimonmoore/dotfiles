@@ -450,8 +450,6 @@ function gch {
 alias gm='git merge'
 alias gl='git log'
 alias gld='git log --oneline --decorate'
-alias fixup="git commit -m \"fixup! $(git log -1 --format='%s')\""
-alias squash="git commit -m \"squash! $(git log -1 --format='%s')\""
 alias gri="git rebase --interactive --autosquash"
 alias grm='git rebase master'
 alias gnp='git-notpushed'
