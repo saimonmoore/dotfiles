@@ -495,6 +495,7 @@ alias jsbeautify="java org.mozilla.javascript.tools.shell.Main /Users/saimon/Dev
 alias noderb="rlwrap ~/local/bin/node-repl"
 
 #Virtual Machines
+alias v="vagrant"
 #vmware
 alias vmfairup="vmrun -T fusion start ~/Documents/Virtual\ Machines.localized/officialfmvm.vmwarevm/generaldev.vmx nogui"
 alias vmfairdown="vmrun -T fusion suspend ~/Documents/Virtual\ Machines.localized/officialfmvm.vmwarevm/generaldev.vmx nogui"
