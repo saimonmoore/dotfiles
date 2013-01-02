@@ -24,6 +24,10 @@ test -r /etc/bashrc &&
 # notify of bg job completion immediately
 set -o notify
 
+# http://www.catonmat.net/download/bash-vi-editing-mode-cheat-sheet.pdf
+# vi mode
+set -o vi
+
 # shell opts. see bash(1) for details
 # shopt -s autocd >/dev/null 2>&1
 shopt -s cdspell >/dev/null 2>&1
@@ -76,6 +80,18 @@ PATH="~/Development/OpenSource/github/phonegap/android/bin:$PATH"
 test -d "~/local/bin" &&
 PATH="~/local/bin:$PATH"
 
+test -d "/usr/local/lib/node_modules" &&
+PATH="/usr/local/lib/node_modules:$PATH"
+
+test -d "~/node_modules/.bin" &&
+PATH="~/node_modules/.bin:$PATH"
+
+test -d "/usr/local/Cellar/python/2.7/bin" &&
+PATH="/usr/local/Cellar/python/2.7/bin:$PATH"
+
+# put ~/.bundle/bin on PATH if you have it
+# test -d "$HOME/.bundle/ruby/1.8/bin" &&
+# PATH="$HOME/.bundle/ruby/1.8/bin:$PATH"
 
 # ----------------------------------------------------------------------
 # ENVIRONMENT CONFIGURATION
@@ -93,12 +109,11 @@ case "$0" in
     *)  unset LOGIN ;;
 esac
 
-# enable es_ES locale w/ utf-8 encodings if not already configured
-: ${LANG:="es_ES.UTF-8"}
-: ${LANGUAGE:="es"}
-: ${LC_CTYPE:="es_ES.UTF-8"}
-: ${LC_ALL:="es_ES.UTF-8"}
-export LANG LANGUAGE LC_CTYPE LC_ALL
+# enable en_US locale w/ utf-8 encodings if not already configured
+export LANG="en_US.UTF-8"
+export LANGUAGE="en"
+export LC_CTYPE="en_US.UTF-8"
+export LC_ALL="en_US.UTF-8"
 
 # always use PASSIVE mode ftp
 : ${FTP_PASSIVE:=1}
@@ -112,7 +127,7 @@ HISTCONTROL=ignoreboth
 HISTSIZE=10000
 # HISTIGNORE="&:ls:[ \t]*:[bf]g:exit:stealth"
 HISTIGNORE="&:ls:[bf]g:exit:stealth:fg*"
-bind '"\C-f": "fg %-\n"'
+# bind '"\C-f": "fg %-\n"'
 # bind '"\\C-o": "open "$(pbpaste)""'
 # bind '"\\C-g": "open http://google.com/search?q=$(pbpaste)"'
 
@@ -136,6 +151,8 @@ SSH_ENV=$HOME/.ssh/environment
 test -r ~/.amazon_keys &&
       . ~/.amazon_keys
 
+export RESTCLIENT_LOG=stdout
+export HACKER_GEMS_HOST=hackergems.net
 # ----------------------------------------------------------------------
 # PAGER / EDITOR
 # ----------------------------------------------------------------------
@@ -143,12 +160,10 @@ test -r ~/.amazon_keys &&
 # See what we have to work with ...
 HAVE_VIM=$(command -v vim)
 HAVE_GVIM=$(command -v gvim)
-HAVE_MVIM=$(command -v mvim) # macvim
-HAVE_TVIM=$(command -v tvim) #vim in terminal
 
 # EDITOR
 test -n "$HAVE_VIM" &&
-EDITOR="mvim -f" ||
+EDITOR="vim -f" ||
 EDITOR=vi
 export EDITOR
 
@@ -156,6 +171,7 @@ SVN_EDITOR=$EDITOR
 GIT_EDITOR=$EDITOR
 TEXEDIT='$EDITOR +%d %s'
 LESSEDIT='$EDITOR ?lm+%lm. %f'
+export LESS='-R'
 
 # PAGER
 if test -n "$(command -v less)" ; then
@@ -219,10 +235,11 @@ prompt_color() {
 #includes current ruby and git branch
 
 prompt_git() {
-    if [ -f  /usr/local/Cellar/git/1.7.3.2/etc/bash_completion.d/git-completion.bash ]; then
-      .  /usr/local/Cellar/git/1.7.3.2/etc/bash_completion.d/git-completion.bash;
+    if [ -f  /usr/local/Cellar/git/1.7.12/etc/bash_completion.d/git-completion.bash ]; then
+      .  /usr/local/Cellar/git/1.7.12/etc/bash_completion.d/git-completion.bash;
       # PS1='[\h \W$(__git_ps1 " (%s)")]\$ ';
-      PS1="\u@\h \W\$(~/.rvm/bin/rvm-prompt)\$(__git_ps1 '(%s)') $ "
+      # PS1="\u@\h \W$(__git_ps1 '(%s)') $ "
+      PS1='\u@\h \W$(__git_ps1 " (%s)")\$ '
     fi
 }
 
@@ -252,34 +269,42 @@ if [ "$UNAME" = Darwin ]; then
     JAVA_HOME="/System/Library/Frameworks/JavaVM.framework/Home"
     export JAVA_HOME
 
+    alias portscan="/Applications/Utilities/Network\ Utility.app/Contents/Resources/stroke"
+
 fi
 
 # ----------------------------------------------------------------------
 # ALIASES / FUNCTIONS
 # ----------------------------------------------------------------------
 
+#tmux
+# alias tmux="TERM=screen-256color-bce tmux"
+
+#clear
+alias cl=clear
 #Navigation
 alias u='cd ..'
 alias h='cd ~'
 alias pop='popd'
 
 # changing directory to code project
-function c { pushd ~/Development/Clients/$1; }
-function cps { pushd ~/Development/Projects/$1; }
-function cgh { pushd ~/Development/OpenSource/github/$1; }
-function cfk { pushd ~/Development/OpenSource/forks/$1; }
+function c { cd ~/Development/Clients/Teambox/$1; }
+function cps { cd ~/Development/Projects/$1; }
+function cgh { cd ~/Development/OpenSource/github/$1; }
+function cfk { cd ~/Development/OpenSource/forks/$1; }
 
 #bash
 # disk usage with human sizes and minimal depth
 alias du1='du -h --max-depth=1'
+alias duf='du -kd 1 | sort -nr | while read size fname; do for unit in k M G T P E Z Y; do if [ $size -lt 1024 ]; then echo -e "${size}${unit}\t${fname}"; break; fi; size=$((size/1024)); done; done'
 alias fn='find . -name'
 alias p="ps axww | grep "
 alias px="ps -ax -m -o pid,%cpu,rss,command | grep "
 alias k="kill -9"
 alias r="history | grep"
-alias eb="vim ~/.profile"
+alias eb="$EDITOR ~/.profile"
 alias ab="source ~/.profile"
-alias eh="sudo vim /etc/hosts"
+alias eh="sudo $EDITOR /etc/hosts"
 alias ah="sudo dscacheutil -flushcache" #leopard
 alias clr='clear'
 alias grep='GREP_COLOR="1;37;41" LANG=C grep --color=auto'
@@ -287,10 +312,18 @@ alias g='grep'
 alias l='less'
 alias ec='e ~/Documents/commands.txt'
 alias sz="du -sk ./* | sort -n | awk 'BEGIN{ pref[1]=\"K\"; pref[2]=\"M\"; pref[3]=\"G\";} { total = total + \$1; x = \$1; y = 1; while( x > 1024 ) { x = (x + 1023)/1024; y++; } printf(\"%g%s\t%s\n\",int(x*10)/10,pref[y],\$2); } END { y = 1; while( total > 1024 ) { total = (total + 1023)/1024; y++; } printf(\"Total: %g%s\n\",int(total*10)/10,pref[y]); }'"
+alias time='gtime -f "%e %U %S %P" '
+alias bi='bundle install'
+#for tests
+alias bit='bundle install --standalone'
+
+#Grwol notifications
+function growl() { echo -e $'\e]9;'${*}'\007' ; return ; }
 
 #editors
 alias tm=mate
 alias tmw="tm -w "
+alias :e="vim"
 
 # osx
 alias ql="qlmanage -p 2>/dev/null"
@@ -306,11 +339,51 @@ alias gfk="cd ~/Development/OpenSource/forks"
 #ruby
 alias irb="irb --prompt simple"
 alias bspec="bundle exec spec"
+alias brspec="bundle exec rspec --format Fuubar --color "
 alias bcucumber="bundle exec cucumber"
 alias brake="bundle exec rake"
 alias birb="bundle exec irb"
 alias be="bundle exec"
-alias cleardb='be rake db:drop db:create db:schema:load db:seed && be rake db:test:clone'
+alias rsh='git remote update && git rebase hosted/hosted && bundle && cleardb && rails s'
+alias rsd='git remote update && git rebase orign/dev && bundle && cleardb && rails s'
+alias z=zeus
+
+function cleardb {
+  DEVDB="`ruby -e "require 'yaml'; puts YAML.load(File.open('config/database.yml'))['development']['database']"`" 
+  if [[ $DEVDB =~ "production" ]]; then
+      echo 'WATCHOUT! cleardb running against production dump';
+  else
+    bundle exec rake db:drop db:create db:schema:load db:seed && bundle exec rake db:test:clone;
+  fi
+}
+
+#bash
+alias logclear='for l in $(ls log/*.log); do > $l; done'
+alias slogclear="echo 'for l in \$(ls log/*.log); do > $l; done' | sudo sh"
+
+function bo {
+  if [ -z "$1" ]; then
+      bundle open $(git log -n 1 -p -- Gemfile | egrep "^\+ " | awk '{print $3}' | sed "s/'//g" | sed "s/,//g") &> /dev/null &
+  else
+    bundle open $1 &> /dev/null &
+  fi
+}
+
+function loopc {
+  args=("$@")
+
+  if [ $1 -ge 0 2>/dev/null ]
+  then
+    LIMIT=$1
+    unset args[0]
+  else
+    LIMIT=5
+  fi
+
+  for i in $(eval echo "{1..$LIMIT}"); do
+    $(eval echo "${args[@]}");
+  done
+}
 
 #ssh
 alias pssh="ssh -p 8888 "
@@ -332,6 +405,15 @@ alias ss='./script/server'
 alias sc='./script/console'
 alias sg='./script/generate'
 alias sp='./script/plugin'
+alias migrate='rm -f db/*sqlite3 && rake db:migrate db:test:clone'
+
+function irp {
+  if [ -z "$1" ]; then
+    pry -r ./config/environment RAILS_ENV=development
+  else
+    pry -r ./config/environment RAILS_ENV=$1
+  fi
+}
 
 # Git
 if test -n "$(command -v hub)" ; then
@@ -342,17 +424,20 @@ alias gpl='git pull'
 alias gp='git push'
 alias gd='git diff'
 alias gdc='git diff --cached'
-alias gde='gd | vim'
-alias gdce='gdc | vim'
+alias gde='gd | $EDITOR'
+alias gdce='gdc | $EDITOR'
 alias gc='git commit -v'
+alias gcp='git cherry-pick'
 alias gca='git commit -va'
 alias gb='git branch -v'
 alias gss='git status -sb'
-alias grm="git status | grep deleted | awk '{print \$3}' | xargs git rm"
+alias grm="git status | grep deleted | awk '{print $3}' | xargs git rm"
 alias gscore='git log --numstat | awk -f /Users/saimon/bin/git_score.awk'
 alias ga='git add'
 alias gs='git status'
 alias gps='git push'
+alias gsh='git show'
+alias gchtb4='git checkout master && git remote update && git rebase origin/master'
 
 function gch {
   if [ -z "$1" ]; then
@@ -364,6 +449,7 @@ function gch {
 
 alias gm='git merge'
 alias gl='git log'
+alias gld='git log --oneline --decorate'
 alias fixup="git commit -m \"fixup! $(git log -1 --format='%s')\""
 alias squash="git commit -m \"squash! $(git log -1 --format='%s')\""
 alias gri="git rebase --interactive --autosquash"
@@ -374,6 +460,10 @@ alias fcm='git rev-list master |tail -n 1'
 alias lcm='git rev-parse HEAD'
 alias gfm="git status | grep modified | awk '{print \$3}' | head -n"
 alias rmcachedassets="gs | grep public | awk '{print \$2}' | xargs rm"
+
+function git_id { 
+  printf 'blob %s\0' "$(ls -l "$1" | awk '{print $5;}')" | cat - "$1" | sha1sum | awk '{print $1}'; 
+}
 
 #redis
 alias start_redis='launchctl load -w ~/Library/LaunchAgents/io.redis.redis-server.plist'
@@ -389,6 +479,11 @@ alias restart_memcached='launchctl unload -w ~/Library/LaunchAgents/com.danga.me
 alias start_nginx='sudo launchctl load -w ~/Library/LaunchAgents/org.nginx.plist'
 alias stop_nginx='sudo launchctl unload -w ~/Library/LaunchAgents/org.nginx.plist'
 alias restart_nginx='sudo launchctl unload -w ~/Library/LaunchAgents/org.nginx.plist; sudo launchctl load -w ~/Library/LaunchAgents/org.nginx.plist'
+
+#elasticsearch
+alias start_elastic='launchctl load -wF ~/Library/LaunchAgents/org.elasticsearch.plist'
+alias stop_elastic='launchctl unload -wF ~/Library/LaunchAgents/org.elasticsearch.plist'
+alias restart_elastic='stop_elastic;start_elastic'
 
 #mysql
 source ~/.mysql_aliases
@@ -435,6 +530,19 @@ alias vbbootstripup="pushd ~/Development/Projects/bootstrip/src; bundle exec vag
 alias vbbootstripdown="pushd ~/Development/Projects/bootstrip/src; bundle exec vagrant suspend; popd"
 alias vbbootstripssh="pushd ~/Development/Projects/bootstrip/src; bundle exec vagrant ssh; popd"
 
+#teambox
+alias diffprod='git diff $(ey ssh "cat /data/Teambox2/current/REVISION" -e hosted)..'
+function checkhosted { 
+  export HOSTED=$(ey ssh "cat /data/Teambox2/current/REVISION" -e hosted); echo $HOSTED;
+}
+
+function exechosted {
+  ey ssh "cd /data/Teambox2/current; RAILS_ENV=production bundle exec rails runner '$1'" -e hosted
+}
+
+alias tb4_console="ssh -t $($1|echo 'tb4-utility') 'cd /data/teambox/current; make console'"
+alias infojobs_console="ssh -t $($1|echo 'infojobs1') 'cd /data/teambox/current; bundle exec rails c'"
+
 # Functions
 
 # usage:
@@ -445,24 +553,25 @@ function superblame {
     ruby -e 'n=Hash.new(0); while gets; i=0; puts $_.gsub(/\d+/){ n[i+=1] += $&.to_i }; end' | tail -n1
 }
 
-function start_agent {
-     echo "Initializing new SSH agent..."
-     /usr/bin/ssh-agent | sed 's/^echo/#echo/' > ${SSH_ENV}
-     echo succeeded
-     chmod 600 ${SSH_ENV}
-     . ${SSH_ENV} > /dev/null
-     /usr/bin/ssh-add;
-}
+#Commented as now using osx keychain: http://www.dribin.org/dave/blog/archives/2007/11/28/ssh_agent_leopard/
+# function start_agent {
+#      echo "Initializing new SSH agent..."
+#      /usr/bin/ssh-agent | sed 's/^echo/#echo/' > ${SSH_ENV}
+#      echo succeeded
+#      chmod 600 ${SSH_ENV}
+#      . ${SSH_ENV} > /dev/null
+#      /usr/bin/ssh-add;
+# }
 
-# Source SSH settings, if applicable
-if [ -f "${SSH_ENV}" ]; then
-     . ${SSH_ENV} > /dev/null
-     ps -x | grep "^ *${SSH_AGENT_PID}" | grep ssh-agent$ > /dev/null || {
-         start_agent;
-     }
-else
-     start_agent;
-fi
+# # Source SSH settings, if applicable
+# if [ -f "${SSH_ENV}" ]; then
+#      . ${SSH_ENV} > /dev/null
+#      ps -x | grep "^ *${SSH_AGENT_PID}" | grep ssh-agent$ > /dev/null || {
+#          start_agent;
+#      }
+# else
+#      start_agent;
+# fi
 
 #rvm
 function rvmd() {
@@ -635,6 +744,26 @@ complete -C ~/dotfiles/completion_scripts/github_completion -o default cgh
 complete -C ~/dotfiles/completion_scripts/forks_completion -o default cfk
 complete -C ~/dotfiles/completion_scripts/capistrano_completion -o default cap
 
+
+_hackergemscomplete() {
+    local cur prev opts base
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    languages="`hacker_gems gems:languages | xargs`"
+    tags="`hacker_gems gems:tags | xargs`"
+
+    if [ "${prev}" = "hacker_gems" ]; then
+      COMPREPLY=($(compgen -W "${languages}" -- ${cur}))  
+      return 0
+    else
+	  COMPREPLY=( $(compgen -W "${tags}" -- ${cur}) )
+      return 0
+    fi
+}
+complete -o default -o nospace -F _hackergemscomplete hacker_gems
+
 # ----------------------------------------------------------------------
 # LS AND DIRCOLORS
 # ----------------------------------------------------------------------
@@ -663,6 +792,8 @@ alias l.="ls -d .*"
 # alias ls='ls -FG'
 alias la='ls -A'
 alias lx='ls -X'
+alias ssu='bundle exec unicorn -c ~/.unicorn_dev.rb -E development -l 3000 -D'
+alias ssud='bundle exec unicorn -d -c ~/.unicorn_dev.rb -E development -l 3000 -D'
 
 
 
@@ -675,6 +806,9 @@ test -n "$PS1" &&
 prompt_git
 
 # rvm-install added line:
-if [[ -s ~/.rvm/scripts/rvm ]] ; then source ~/.rvm/scripts/rvm ; fi
+# if [[ -s ~/.rvm/scripts/rvm ]] ; then source ~/.rvm/scripts/rvm ; fi
 
+if which rbenv > /dev/null; then eval "$(rbenv init - --no-rehash)"; fi
+
+export RBENV_VERSION='1.9.3-p194-perf'
 # vim: ts=4 sts=4 shiftwidth=4 expandtab

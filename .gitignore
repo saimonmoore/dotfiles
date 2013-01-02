@@ -1,32 +1,5 @@
-*~
-.DS_Store
-Desktop
-Development
-Downloads
-Library
-Movies
-Music
-Pictures
-Public
-Send Registration
-Sites
-dev
-.avidemux/
-.avidemux-etc/
-.bash_history
-.braid/
-.cups/
-.dropbox/
-.fontconfig/
-.gem/
-.irb-history
-.lesshst
-.mysql_history
-.python-eggs/
-.rdebug_hist
-.ri/
-.rvm/
-.sqlite_history
-.CFUserTextEncoding
-.Trash
-gitignore
+# First, ignore everything
+*
+# Now, whitelist only the file you're interested in.
+!*.bashrc
+!*.profile

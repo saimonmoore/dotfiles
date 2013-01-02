@@ -68,9 +68,9 @@ termcapinfo xterm* ti@:te@
 
 #to enable multiuser: sudo chmod u+s `which screen`
 
-#multiuser on
-#aclchg saimon -x "?"    #Revoke permission to execute any screen command
-#aclchg saimon +x "wall" #Allow writing simple messages in the terminal status line
-#aclumask saimon-wx      #Default permissions to windows
-#acladd saimon           #Enable user snoopy to access screen session
+multiuser on
+#aclchg jordi -x "?"    #Revoke permission to execute any screen command
+#aclchg jordi +x "wall" #Allow writing simple messages in the terminal status line
+#aclumask jordi -wx      #Default permissions to windows
+acladd jordi           #Enable user snoopy to access screen session
 #

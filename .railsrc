@@ -15,3 +15,88 @@ def l(stream = STDOUT)
   end
   "logger reset!"
 end
+
+def make_task(login, name, comment, opts={})
+   user = User.find_by_login login
+   User.try(:current=, user) if User.respond_to?(:current=)
+   User.try(:current).push_session_id = 'bla' if User.respond_to?(:current) && User.try(:current)
+   task = user.projects.first.tasks.build({:name =>name, :comments_attributes => {0 => {:body =>comment}}}.merge(opts))
+   task.task_list_id = TaskList.last
+   task.user_id = user.id
+   task.save
+   task
+end
+
+def make_task_list(login, name, opts={})
+   user = User.find_by_login login
+   User.try(:current=, user) if User.respond_to?(:current=)
+   User.try(:current).push_session_id = 'bla' if User.respond_to?(:current) && User.try(:current)
+   task_list = user.projects.first.task_lists.build({:name =>name}.merge(opts))
+   task_list.user_id = user.id
+   task_list.save
+   task_list
+end
+
+def make_conversation(login, comment, opts={})
+   user = User.find_by_login login
+   User.try(:current=, user) if User.respond_to?(:current=)
+   User.try(:current).push_session_id = 'bla' if User.respond_to?(:current) && User.try(:current)
+   conversation = user.projects.first.conversations.build({:simple =>true, :comments_attributes => {0 => {:body =>comment}}}.merge(opts))
+   conversation.user_id = user.id
+   conversation.save
+   conversation
+end
+
+def make_comment(login, body, target=nil, status=nil, assigned=nil, opts={})
+   user = User.find_by_login login
+   User.try(:current=, user) if User.respond_to?(:current=)
+   User.try(:current).push_session_id = 'bla' if User.respond_to?(:current) && User.try(:current)
+   comment = user.comments.build({:body => body}.merge(opts))
+   comment.project = target.project
+   comment.target = target
+   if assigned && status
+     comment.status = status
+     comment.assigned_id = assigned
+   end
+   comment.save
+   comment
+end
+
+def make_page(login, name, description='bla', opts={})
+   notes = opts.delete(:notes)
+   user = User.find_by_login login
+   User.try(:current=, user) if User.respond_to?(:current=)
+   User.try(:current).push_session_id = 'bla' if User.respond_to?(:current) && User.try(:current)
+   page = user.projects.first.pages.build({:name =>name, :description => description}.merge(opts))
+   page.user_id = user.id
+   page.save
+   if notes
+     notes.each do |note|
+       make_note(login, note[0], note[1], page)
+     end
+   end
+   page
+end
+
+def make_note(login, name, body, page = Page.first, opts={})
+   user = User.find_by_login login
+   User.try(:current=, user) if User.respond_to?(:current=)
+   User.try(:current).push_session_id = 'bla' if User.respond_to?(:current) && User.try(:current)
+   note = page.notes.build({:name =>name, :body => body}.merge(opts))
+   note.project = page.project
+   note.updated_by = user
+   note.save
+   note
+end
+
+def make_divider(login, name, page = Page.first, opts={})
+   user = User.find_by_login login
+   User.try(:current=, user) if User.respond_to?(:current=)
+   User.try(:current).push_session_id = 'bla' if User.respond_to?(:current) && User.try(:current)
+   divider = page.dividers.build({:name =>name}.merge(opts))
+   divider.project = page.project
+   divider.updated_by = user
+   divider.save
+   divider
+end
+

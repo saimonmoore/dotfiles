@@ -140,7 +140,7 @@ class << self
      InteractiveEditor.edit('vim', name)
   end
 
-  def gvim(name=nil)
+  def mvim(name=nil)
     InteractiveEditor.edit('/Applications/MacVim.app/Contents/MacOS/Vim -g -f', name)
   end
 

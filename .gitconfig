@@ -1,6 +1,6 @@
 [user]
 	name = Saimon Moore
-	email = saimon@saimonmoore.net
+	email = saimonmoore@gmail.com
 [color]
 	diff = auto
 	status = auto
@@ -20,16 +20,42 @@
         untracked = cyan
 
 [core]
-	excludesfile = ~/.gitignore
+	excludesfile = /Users/saimon/.gitignore
 	autocrlf = false
 [alias]
 	st = status
   ci = commit
 	co = checkout
 	br = branch
-	unadd = reset HEAD
+	unstage = reset HEAD
+  update = '!sh -c "git remote update && git pull --rebase --recurse-submodules"'
+  # Pretty!
+  # via http://andyjeffries.co.uk/articles/25-tips-for-intermediate-git-users
+  lol = log --pretty=oneline --abbrev-commit --graph --decorate
+  # Not yet added - doesn't include ignored files
+  unstaged = ls-files --others --exclude-standard
+  # Files that are in the staging area
+  added = diff --cached --name-only
+  today = log --stat --since='1 Day Ago' --graph --pretty=oneline --abbrev-commit --date=relative
+  ff = merge --ff-only
+  lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --
+  sha = rev-parse HEAD
+[help]
+  autocorrect=1
+
 [branch]
 	autosetupmerge = true
 	autosetuprebase = always
 [push]
 	default = tracking
+[github]
+	user = saimonmoore
+	token = adcb48646b6da528dfbd62a32af14ea0
+[difftool "sourcetree"]
+	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
+	path = 
+[mergetool "sourcetree"]
+	cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
+	trustExitCode = true
+[credential]
+	helper = osxkeychain
