@@ -235,12 +235,12 @@ prompt_color() {
 #includes current ruby and git branch
 
 prompt_git() {
-    if [ -f  /usr/local/Cellar/git/1.7.12/etc/bash_completion.d/git-completion.bash ]; then
-      .  /usr/local/Cellar/git/1.7.12/etc/bash_completion.d/git-completion.bash;
-      # PS1='[\h \W$(__git_ps1 " (%s)")]\$ ';
-      # PS1="\u@\h \W$(__git_ps1 '(%s)') $ "
-      PS1='\u@\h \W$(__git_ps1 " (%s)")\$ '
-    fi
+  if [ -f $(brew --prefix)/etc/bash_completion ]; then
+    . $(brew --prefix)/etc/bash_completion
+    # PS1='[\h \W$(__git_ps1 " (%s)")]\$ ';
+    # PS1="\u@\h \W$(__git_ps1 '(%s)') $ "
+    PS1='\u@\h \W$(__git_ps1 " (%s)")\$ '
+  fi
 }
 
 # ----------------------------------------------------------------------
