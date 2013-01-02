@@ -800,10 +800,8 @@ alias ssud='bundle exec unicorn -d -c ~/.unicorn_dev.rb -E development -l 3000 -
 test -n "$PS1" &&
 prompt_git
 
-# rvm-install added line:
-# if [[ -s ~/.rvm/scripts/rvm ]] ; then source ~/.rvm/scripts/rvm ; fi
-
-if which rbenv > /dev/null; then eval "$(rbenv init - --no-rehash)"; fi
+export PATH="$HOME/.rbenv/bin:$PATH"
+eval "$(rbenv init -)"
 
 export RBENV_VERSION='1.9.3-p194-perf'
 # vim: ts=4 sts=4 shiftwidth=4 expandtab
