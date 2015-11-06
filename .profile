@@ -163,6 +163,12 @@ test -r ~/.amazon_keys &&
 
 export RESTCLIENT_LOG=stdout
 export HACKER_GEMS_HOST=hackergems.net
+
+# Boot2Docker
+#export DOCKER_HOST=tcp://192.168.59.103:2376
+#export DOCKER_CERT_PATH=/Users/saimon/.boot2docker/certs/boot2docker-vm
+#export DOCKER_TLS_VERIFY=1
+
 # ----------------------------------------------------------------------
 # PAGER / EDITOR
 # ----------------------------------------------------------------------
