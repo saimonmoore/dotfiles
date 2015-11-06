@@ -1,10 +1,15 @@
 [user]
 	name = Saimon Moore
 	email = saimonmoore@gmail.com
+[core]
+	excludesfile = /Users/saimon/.gitignore
+	autocrlf = false
+  editor = vim
 [color]
 	diff = auto
 	status = auto
 	branch = auto
+  interactive = auto
 [color "branch"]
         current = yellow reverse
         local = yellow
@@ -19,16 +24,30 @@
         changed = green
         untracked = cyan
 
-[core]
-	excludesfile = /Users/saimon/.gitignore
-	autocrlf = false
 [alias]
+  l  = log
+  ld = log --oneline --decorate
+  sh = show
 	st = status
-  ci = commit
+  sts = status -sb
+  ci = commit -v
 	co = checkout
 	br = branch
+  df  = diff
+  dfc = diff --cached
+  cp = cherry-pick
+  cur = "rev-parse --abbrev-ref HEAD"
+  gh-pullr = "!f() { git cur ; }; google-chrome https://github.com/teambox/Teambox-hosted/pull/new/teambox:develop...teambox:`f`"
+  gh-commits = "!f() { git cur ; }; google-chrome https://github.com/teambox/Teambox-hosted/commits/`f`"
+  rm = "!f() { git status | grep deleted | awk '{print $3}' | xargs git rm}; f"
+  score='git log --numstat | awk -f /Users/saimon/bin/git_score.awk'
+  history = "!f() { echo \"==============> ADDED\" >> HISTORY.md; git log --pretty=format:\"%ai %s [%an]\" >> HISTORY.md; }; f"
 	unstage = reset HEAD
-  update = '!sh -c "git remote update && git pull --rebase --recurse-submodules"'
+  update = "!f() { git remote update && git pull --rebase --recurse-submodules; }; f"
+
+  first = "!git rev-list master |tail -n 1"
+  last = "rev-parse HEAD"
+  mod  = "!f() { git status | grep modified | awk '{print $3}' | head -n 5; }; f"
   # Pretty!
   # via http://andyjeffries.co.uk/articles/25-tips-for-intermediate-git-users
   lol = log --pretty=oneline --abbrev-commit --graph --decorate
@@ -40,8 +59,24 @@
   ff = merge --ff-only
   lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --
   sha = rev-parse HEAD
+  latestb = for-each-ref --sort=-committerdate refs/heads/
+  cichangelog = "!f() { git commit --allow-empty -m \"* $1\"; }; f"
+  back = checkout @{-1}
+  recent = !git for-each-ref --sort=-committerdate --format='%(refname:short)' refs/heads/ | grep -v develop | head -n 20
+  fixup = "!f() { git commit --fixup=$1; git rebase -i --autosquash $1~1; }; f"
+  down-on-it = rebase origin/develop
+  wip = !git add --all . && git commit -m 'WIP'
+
+# Welcome to pam/fzf heaven
+	pam= !git recent | fzf | xargs -o git checkout
+	pamadd= !git status -s | awk '{ print $2 }' | fzf -m | xargs git add --all
+	pamfix= !git log --pretty=oneline | head | fzf | awk '{ print $1 }' | xargs git fixup
+	pamshow= !git log --pretty=oneline | head | fzf | awk '{ print $1 }' | xargs git show
+	pamrebase= !git log --pretty=oneline | head | fzf | awk '{ print $1 }' | xargs -I {} git rebase -i {}^
+	pamvim= !git status -s | awk '{ print $2 }' | fzf -m | xargs vim
+
 [help]
-  autocorrect=1
+	autocorrect = 1
 
 [branch]
 	autosetupmerge = true
@@ -59,3 +94,10 @@
 	trustExitCode = true
 [credential]
 	helper = osxkeychain
+[rerere]
+	enabled = true
+[merge "gemfilelock"]
+  name = relocks the gemfile.lock
+  driver = bundle install
+[rebase]
+	autosquash = true
