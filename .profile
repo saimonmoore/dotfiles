@@ -45,10 +45,17 @@ shopt -s globstar >/dev/null 2>&1
 unset MAILCHECK
 
 # disable core dumps
-ulimit -S -c 0
+#ulimit -S -c 0
+
+# large number of open files
+# Now getting this on yosemite: http://www.openradar.appspot.com/15563096
+# launchctl limit maxfiles 100000 100000
+
+# Move to /etc/sysctl
+#ulimit -S -n 100000
 
 # default umask
-umask 0022
+umask 007
 
 # ----------------------------------------------------------------------
 # PATH
@@ -88,6 +95,9 @@ PATH="~/node_modules/.bin:$PATH"
 
 test -d "/usr/local/Cellar/python/2.7/bin" &&
 PATH="/usr/local/Cellar/python/2.7/bin:$PATH"
+
+test -d "/usr/local/packer" &&
+PATH="/usr/local/packer:$PATH"
 
 # put ~/.bundle/bin on PATH if you have it
 # test -d "$HOME/.bundle/ruby/1.8/bin" &&
@@ -266,8 +276,7 @@ if [ "$UNAME" = Darwin ]; then
     }
 
     # setup java environment. puke.
-    JAVA_HOME="/System/Library/Frameworks/JavaVM.framework/Home"
-    export JAVA_HOME
+    export JAVA_HOME=`/usr/libexec/java_home -v 1.6`
 
     alias portscan="/Applications/Utilities/Network\ Utility.app/Contents/Resources/stroke"
 
@@ -286,6 +295,14 @@ alias cl=clear
 alias u='cd ..'
 alias h='cd ~'
 alias pop='popd'
+
+#coreutils
+alias readlink=greadlink
+
+# Skype
+function export_skype_chat_history { 
+  sqlite3 ~/Library/Application\ Support/Skype/saimonmoore/main.db "SELECT author,timestamp, body_xml FROM messages WHERE dialog_partner = '$1'" > ~/Desktop/skype_chat_history_$1.txt
+}
 
 # changing directory to code project
 function c { cd ~/Development/Clients/Teambox/$1; }
@@ -390,6 +407,10 @@ alias pssh="ssh -p 8888 "
 alias pscp="scp -P 8888 "
 alias tunnel='ssh -D 8888 -f -C -q -N'
 
+function ssh-copy-id {
+  cat ~/.ssh/$2 | ssh $1 'mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys'
+}
+
 # Subversion
 alias sup='svn update'
 alias sst='svn status'
@@ -419,49 +440,6 @@ function irp {
 if test -n "$(command -v hub)" ; then
   alias git='hub'
 fi
-alias gplr='git pull --rebase'
-alias gpl='git pull'
-alias gp='git push'
-alias gd='git diff'
-alias gdc='git diff --cached'
-alias gde='gd | $EDITOR'
-alias gdce='gdc | $EDITOR'
-alias gc='git commit -v'
-alias gcp='git cherry-pick'
-alias gca='git commit -va'
-alias gb='git branch -v'
-alias gss='git status -sb'
-alias grm="git status | grep deleted | awk '{print $3}' | xargs git rm"
-alias gscore='git log --numstat | awk -f /Users/saimon/bin/git_score.awk'
-alias ga='git add'
-alias gs='git status'
-alias gps='git push'
-alias gsh='git show'
-alias gchtb4='git checkout master && git remote update && git rebase origin/master'
-
-function gch {
-  if [ -z "$1" ]; then
-    git checkout master
-  else
-    git checkout $1
-  fi
-}
-
-alias gm='git merge'
-alias gl='git log'
-alias gld='git log --oneline --decorate'
-alias gri="git rebase --interactive --autosquash"
-alias grm='git rebase master'
-alias gnp='git-notpushed'
-alias gh='git log --pretty=format:"%ai %s [%an]" > HISTORY'
-alias fcm='git rev-list master |tail -n 1'
-alias lcm='git rev-parse HEAD'
-alias gfm="git status | grep modified | awk '{print \$3}' | head -n"
-alias rmcachedassets="gs | grep public | awk '{print \$2}' | xargs rm"
-
-function git_id { 
-  printf 'blob %s\0' "$(ls -l "$1" | awk '{print $5;}')" | cat - "$1" | sha1sum | awk '{print $1}'; 
-}
 
 #redis
 alias start_redis='launchctl load -w ~/Library/LaunchAgents/io.redis.redis-server.plist'
@@ -541,6 +519,21 @@ alias infojobs_console="ssh -t $($1|echo 'infojobs1') 'cd /data/teambox/current;
 
 # Functions
 
+gifify() {
+  if [[ -n "$1" ]]; then
+    if [[ $2 == '--good' ]]; then
+      ffmpeg -i $1 -r 10 -vcodec png out-static-%05d.png
+      time convert -verbose +dither -layers Optimize -resize 600x600\> out-static*.png  GIF:- | gifsicle --colors 128 --delay=5 --loop --optimize=3 --multifile - > $1.gif
+      rm out-static*.png
+    else
+      ffmpeg -i $1 -s 600x400 -pix_fmt rgb8 -r 10 -f gif - | gifsicle --optimize=3 --delay=3 > $1.gif
+    fi
+  else
+    echo "proper usage: gifify <input_movie.mov>. You DO need to include extension."
+  fi
+}
+
+
 # usage:
 #   $ superblame Mislav [<from>..<to>]
 function superblame {
@@ -590,7 +583,7 @@ function stealth() { "$@"; }
 # Lists all files modified in current branch since it forked from master
 # search for changes only within file changed in this branch
 # Usage: rak 'query' `git-changeset`
-function git-changeset {
+function gitchangeset {
   git log --name-only --pretty=format:''  master..`__git_ps1 "%s"` | tr -s '\n' | uniq | sort -u
 }
 
@@ -686,23 +679,23 @@ push_ssh_cert() {
 # BASH COMPLETION
 # ----------------------------------------------------------------------
 
-test -z "$BASH_COMPLETION" && {
-    bash=${BASH_VERSION%.*}; bmajor=${bash%.*}; bminor=${bash#*.}
-    test -n "$PS1" && test $bmajor -gt 1 && {
-        # search for a bash_completion file to source
-        for f in /usr/local/etc/bash_completion \
-                 /usr/pkg/etc/bash_completion \
-                 /opt/local/etc/bash_completion \
-                 /etc/bash_completion
-        do
-            test -f $f && {
-                . $f
-                break
-            }
-        done
-    }
-    unset bash bmajor bminor
-}
+# test -z "$BASH_COMPLETION" && {
+#     bash=${BASH_VERSION%.*}; bmajor=${bash%.*}; bminor=${bash#*.}
+#     test -n "$PS1" && test $bmajor -gt 1 && {
+#         # search for a bash_completion file to source
+#         for f in /usr/local/etc/bash_completion \
+#                  /usr/pkg/etc/bash_completion \
+#                  /opt/local/etc/bash_completion \
+#                  /etc/bash_completion
+#         do
+#             test -f $f && {
+#                 . $f
+#                 break
+#             }
+#         done
+#     }
+#     unset bash bmajor bminor
+# }
 
 # override and disable tilde expansion
 _expand() {
@@ -711,54 +704,53 @@ _expand() {
 
 # tab completion for ssh hosts
 # http://drawohara.tumblr.com/post/6584031
-SSH_COMPLETE=( $(cat ~/.ssh/known_hosts | \
-                 cut -f 1 -d ' ' | \
-                 sed -e s/,.*//g | \
-                 sed -e s/[]:8\[]*//g | \
-                 sed s/:\d+//g | \
-                 uniq | egrep -v [01234456789]) )
+# SSH_COMPLETE=( $(cat ~/.ssh/known_hosts | \
+#                  cut -f 1 -d ' ' | \
+#                  sed -e s/,.*//g | \
+#                  sed -e s/[]:8\[]*//g | \
+#                  sed s/:\d+//g | \
+#                  uniq | egrep -v [01234456789]) )
 
-complete -o default -W "${SSH_COMPLETE[*]}" ssh
-complete -o default -W "${SSH_COMPLETE[*]}" pssh
+# complete -o default -W "${SSH_COMPLETE[*]}" ssh
+# complete -o default -W "${SSH_COMPLETE[*]}" pssh
 
-_complete_git() {
-  if [ -d .git ]; then
-    branches=`git branch -a | cut -c 3-`
-    tags=`git tag`
-    cur="${COMP_WORDS[COMP_CWORD]}"
-    COMPREPLY=( $(compgen -W "${branches} ${tags}" -- ${cur}) )
-  fi
-}
+# _complete_git() {
+#   if [ -d .git ]; then
+#     branches=`git branch -a | cut -c 3-`
+#     tags=`git tag`
+#     cur="${COMP_WORDS[COMP_CWORD]}"
+#     COMPREPLY=( $(compgen -W "${branches} ${tags}" -- ${cur}) )
+#   fi
+# }
 
-complete -F _complete_git gch
+# complete -F _complete_git gch
 
-source ~/dotfiles/completion_scripts/git_completion
-complete -C ~/dotfiles/completion_scripts/rake_completion -o default rake
-complete -C ~/dotfiles/completion_scripts/client_completion -o default c
-complete -C ~/dotfiles/completion_scripts/project_completion -o default cps
-complete -C ~/dotfiles/completion_scripts/github_completion -o default cgh
-complete -C ~/dotfiles/completion_scripts/forks_completion -o default cfk
-complete -C ~/dotfiles/completion_scripts/capistrano_completion -o default cap
+# complete -C ~/dotfiles/completion_scripts/rake_completion -o default rake
+# complete -C ~/dotfiles/completion_scripts/client_completion -o default c
+# complete -C ~/dotfiles/completion_scripts/project_completion -o default cps
+# complete -C ~/dotfiles/completion_scripts/github_completion -o default cgh
+# complete -C ~/dotfiles/completion_scripts/forks_completion -o default cfk
+# complete -C ~/dotfiles/completion_scripts/capistrano_completion -o default cap
 
 
-_hackergemscomplete() {
-    local cur prev opts base
-    COMPREPLY=()
-    cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
+# _hackergemscomplete() {
+#     local cur prev opts base
+#     COMPREPLY=()
+#     cur="${COMP_WORDS[COMP_CWORD]}"
+#     prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    languages="`hacker_gems gems:languages | xargs`"
-    tags="`hacker_gems gems:tags | xargs`"
+#     languages="`hacker_gems gems:languages | xargs`"
+#     tags="`hacker_gems gems:tags | xargs`"
 
-    if [ "${prev}" = "hacker_gems" ]; then
-      COMPREPLY=($(compgen -W "${languages}" -- ${cur}))  
-      return 0
-    else
-	  COMPREPLY=( $(compgen -W "${tags}" -- ${cur}) )
-      return 0
-    fi
-}
-complete -o default -o nospace -F _hackergemscomplete hacker_gems
+#     if [ "${prev}" = "hacker_gems" ]; then
+#       COMPREPLY=($(compgen -W "${languages}" -- ${cur}))  
+#       return 0
+#     else
+# 	  COMPREPLY=( $(compgen -W "${tags}" -- ${cur}) )
+#       return 0
+#     fi
+# }
+# complete -o default -o nospace -F _hackergemscomplete hacker_gems
 
 # ----------------------------------------------------------------------
 # LS AND DIRCOLORS
@@ -804,5 +796,6 @@ prompt_git
 export PATH="$HOME/.rbenv/bin:$PATH"
 eval "$(rbenv init -)"
 
-export RBENV_VERSION='1.9.3-p327-perf'
 # vim: ts=4 sts=4 shiftwidth=4 expandtab
+
+[[ -s "/Users/saimon/.gvm/scripts/gvm" ]] && source "/Users/saimon/.gvm/scripts/gvm"
