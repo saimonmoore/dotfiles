@@ -74,7 +74,7 @@
   pamshow= !git log --pretty=oneline | head | fzf | awk '{ print $1 }' | xargs git show
   pamrebase= !git log --pretty=oneline | head | fzf | awk '{ print $1 }' | xargs -I {} git rebase -i {}^
   pamvim= !git status -s | awk '{ print $2 }' | fzf -m | xargs vim
-  pamgrep= !vim $(git grep $1 | fzf -m | cut -d: -f1)
+  pamgrep= !vim $(git grep $1 $2 | fzf -m | cut -d: -f1)
 
 [help]
   autocorrect = 1
