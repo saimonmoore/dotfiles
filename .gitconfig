@@ -86,7 +86,6 @@
   default = tracking
 [github]
   user = saimonmoore
-  token = adcb48646b6da528dfbd62a32af14ea0
 [difftool "sourcetree"]
   cmd = opendiff \"$LOCAL\" \"$REMOTE\"
   path = 
