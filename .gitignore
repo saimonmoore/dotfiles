@@ -1,9 +1,6 @@
 # First, ignore everything
-~/*
+#~/*
 # Now, whitelist only the file you're interested in.
-!~/*.bashrc
-!~/*.profile
-.amazon_aws
-.ruby-version
-AMAZON_S3_CREDENTIALS.sh
-investigate
+#!~/*.bashrc
+#!~/*.profile
+#.amazon_aws

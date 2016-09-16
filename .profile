@@ -758,6 +758,8 @@ _expand() {
 # }
 # complete -o default -o nospace -F _hackergemscomplete hacker_gems
 
+source /usr/local/bin/tmuxinator.bash
+
 # ----------------------------------------------------------------------
 # LS AND DIRCOLORS
 # ----------------------------------------------------------------------
@@ -805,3 +807,4 @@ eval "$(rbenv init -)"
 # vim: ts=4 sts=4 shiftwidth=4 expandtab
 
 [[ -s "/Users/saimon/.gvm/scripts/gvm" ]] && source "/Users/saimon/.gvm/scripts/gvm"
+[[ -f $HOME/.gemrc_local ]] && export GEMRC=$HOME/.gemrc_local
