@@ -2,7 +2,7 @@
   name = Saimon Moore
   email = saimonmoore@gmail.com
 [core]
-  excludesfile = /Users/saimon/.gitignore
+  excludesfile = /home/saimon/.gitignore
   autocrlf = false
   editor = vim
 [color]
@@ -42,7 +42,6 @@
   gh-pullr = "!f() { git cur ; }; google-chrome https://github.com/teambox/Teambox-hosted/pull/new/teambox:develop...teambox:`f`"
   gh-commits = "!f() { git cur ; }; google-chrome https://github.com/teambox/Teambox-hosted/commits/`f`"
   rm = "!f() { git status | grep deleted | awk '{print $3}' | xargs git rm}; f"
-  score='git log --numstat | awk -f /Users/saimon/bin/git_score.awk'
   history = "!f() { echo \"==============> ADDED\" >> HISTORY.md; git log --pretty=format:\"%ai %s [%an]\" >> HISTORY.md; }; f"
   unstage = reset HEAD
   update = "!f() { git remote update && git pull --rebase --recurse-submodules; }; f"
@@ -72,12 +71,15 @@
 
   # Welcome to pam/fzf heaven
 	pam= !BRANCH=`git recent | fzf` && git checkout ${BRANCH}
-	pamadd= !FILES=`git status -s | awk '{ print $2 }' | fzf -m` && git add --all ${FILES}
+	pamadd= !FILES=`git status -s | awk '{ print $2 }' | fzf -x -m` && git add --all ${FILES}
 	pamfix= !HASH=`git log --pretty=oneline | head | fzf` && git fixup `echo ${HASH} | awk '{ print $1 }'`
 	pamshow= !HASH=`git log --pretty=oneline | head | fzf` && git show `echo ${HASH} | awk '{ print $1 }'`
-	pamrebase= !HASH=`git log --pretty=oneline | head -n 40 | fzf` && git rebase -i --autosquash `echo ${HASH} | awk '{ print $1 }'`^
-	pamvim= !FILES=`git status -s | awk '{ print $2 }' | fzf -m` && vim ${FILES}
-	pamgrep= !sh -c 'FILES=`git grep -A 0 -B 0 $1 $2 | fzf -m` && vim `echo ${FILES} | cut -d':' -f1`' -
+	pamlog= !HASH=`git log --pretty=oneline | head | fzf` && echo ${HASH} | awk '{ print $1 }' | xargs echo -n | pbcopy
+	pamrebase= !HASH=`git log --pretty=oneline | head -n 50 | fzf` && git rebase -i `echo ${HASH} | awk '{ print $1 }'`^
+	pamvim= !FILES=`git status -s | awk '{ print $2 }' | fzf -x -m` && vim ${FILES}
+	pamgrep= !sh -c 'FILES=`git grep -l -A 0 -B 0 $1 $2 | fzf -x -m` && vim `echo ${FILES} | cut -d':' -f1 | xargs`' -
+	pamvimlog= !HASH=`git log --pretty=oneline | head -n 50 | fzf` && HASHZ=`echo ${HASH} | awk '{ print $1 }'` && FILES=`git show --pretty='format:'  --name-only $HASHZ | fzf -x -m` && vim ${FILES}
+	pamreset= !HASH=`git log --pretty=oneline | head -n 50 | fzf` && git reset --soft `echo ${HASH} | awk '{ print $1 }'`^
 
 [help]
   autocorrect = 1
@@ -92,11 +94,6 @@
 [difftool "sourcetree"]
   cmd = opendiff \"$LOCAL\" \"$REMOTE\"
   path = 
-[mergetool "sourcetree"]
-  cmd = /Applications/SourceTree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
-  trustExitCode = true
-[credential]
-  helper = osxkeychain
 [rerere]
   enabled = true
 [merge "gemfilelock"]

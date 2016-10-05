@@ -41,6 +41,13 @@ shopt -s no_empty_cmd_completion >/dev/null 2>&1
 #bash4
 shopt -s globstar >/dev/null 2>&1
 
+# check the window size after each command and, if necessary,
+# update the values of LINES and COLUMNS.
+shopt -s checkwinsize
+
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
 # fuck that you have new mail shit
 unset MAILCHECK
 
@@ -68,40 +75,6 @@ PATH="/usr/local/bin:$PATH"
 # put ~/bin on PATH if you have it
 test -d "$HOME/bin" &&
 PATH="$HOME/bin:$PATH"
-
-# put ~/Development/bin on PATH if you have it
-test -d "$HOME/Development/bin" &&
-PATH="$HOME/Development/bin:$PATH"
-
-# put vmware fusion bin on PATH if you have it
-test -d "/Library/Application Support/VMware Fusion/" &&
-PATH="/Library/Application Support/VMware Fusion/:$PATH"
-
-# put android tools bin on PATH if you have it
-test -d "~/Development/OpenSource/android-sdk-mac_x86/tools" &&
-PATH="~/Development/OpenSource/android-sdk-mac_x86/tools:$PATH"
-
-test -d "~/Development/OpenSource/github/phonegap/android/bin" &&
-PATH="~/Development/OpenSource/github/phonegap/android/bin:$PATH"
-
-test -d "~/local/bin" &&
-PATH="~/local/bin:$PATH"
-
-test -d "/usr/local/lib/node_modules" &&
-PATH="/usr/local/lib/node_modules:$PATH"
-
-test -d "~/node_modules/.bin" &&
-PATH="~/node_modules/.bin:$PATH"
-
-test -d "/usr/local/Cellar/python/2.7/bin" &&
-PATH="/usr/local/Cellar/python/2.7/bin:$PATH"
-
-test -d "/usr/local/packer" &&
-PATH="/usr/local/packer:$PATH"
-
-# put ~/.bundle/bin on PATH if you have it
-# test -d "$HOME/.bundle/ruby/1.8/bin" &&
-# PATH="$HOME/.bundle/ruby/1.8/bin:$PATH"
 
 # ----------------------------------------------------------------------
 # ENVIRONMENT CONFIGURATION
@@ -140,8 +113,6 @@ HISTIGNORE="&:ls:[bf]g:exit:stealth:fg*"
 # bind '"\C-f": "fg %-\n"'
 # bind '"\\C-o": "open "$(pbpaste)""'
 # bind '"\\C-g": "open http://google.com/search?q=$(pbpaste)"'
-
-PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
 
 LD_LIBRARY_PATH=/usr/local/lib/:/opt/local/lib:/opt/usr/lib
 
@@ -183,6 +154,9 @@ EDITOR="vim -f" ||
 EDITOR=vi
 export EDITOR
 
+# make less more friendly for non-text input files, see lesspipe(1)
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
 SVN_EDITOR=$EDITOR
 GIT_EDITOR=$EDITOR
 TEXEDIT='$EDITOR +%d %s'
@@ -206,86 +180,90 @@ ACK_PAGER="$PAGER"
 # PROMPT
 # ----------------------------------------------------------------------
 
-RED="\[\033[0;31m\]"
-BROWN="\[\033[0;33m\]"
-GREY="\[\033[0;97m\]"
-BLUE="\[\033[0;34m\]"
-PS_CLEAR="\[\033[0m\]"
-SCREEN_ESC="\[\033k\033\134\]"
+# set a fancy prompt (non-color, unless we know we "want" color)
+case "$TERM" in
+    xterm-color) color_prompt=yes;;
+esac
 
-if [ "$LOGNAME" = "root" ]; then
-    COLOR1="${RED}"
-    COLOR2="${BROWN}"
-    P="#"
-elif hostname | grep -q 'teambox\.com'; then
-    TEAMBOX=yep
-    COLOR1="\[\e[0;94m\]"
-    COLOR2="\[\e[0;92m\]"
-    P="\$"
-else
-    COLOR1="${BLUE}"
-    COLOR2="${BROWN}"
-    P="\$"
+# uncomment for a colored prompt, if the terminal has the capability; turned
+# off by default to not distract the user: the focus in a terminal window
+# should be on the output of commands, not on the prompt
+force_color_prompt=yes
+
+if [ -n "$force_color_prompt" ]; then
+    if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+	# We have color support; assume it's compliant with Ecma-48
+	# (ISO/IEC-6429). (Lack of such support is extremely rare, and such
+	# a case would tend to support setf rather than setaf.)
+	color_prompt=yes
+    else
+	color_prompt=
+    fi
 fi
 
-prompt_simple() {
-    unset PROMPT_COMMAND
-    PS1="[\u@\h:\w]\$ "
-    PS2="> "
+function parse_git_dirty {
+  ([[ $(git status 2> /dev/null | tail -n1) != "nothing to commit, working directory clean" ]] && echo -e "\033[01;31m") || echo -e "\033[01;32m"
 }
 
-prompt_compact() {
-    unset PROMPT_COMMAND
-    PS1="${COLOR1}${P}${PS_CLEAR} "
-    PS2="> "
+function parse_git_branch {
+  git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e "s/* \(.*\)/ \1$(parse_git_dirty)/"
 }
 
-prompt_color() {
-    PS1="${GREY}[${COLOR1}\u${GREY}@${COLOR2}\h${GREY}:${COLOR1}\W${GREY}]${COLOR2}$P${PS_CLEAR} "
-    PS2="\[[33;1m\]continue \[[0m[1m\]> "
-}
+RED="$(tput bold)$(tput setaf 1)"
+GREEN="$(tput bold)$(tput setaf 2)"
+YELLOW="$(tput bold)$(tput setaf 3)"
+NORMAL=$(tput sgr0)
 
-#prompt
-# activate once git has installed
-# export PS1='\u@\h \W$(__git_ps1 " (%s)")\$ '
-#includes current ruby and git branch
+function git_ps1 {
 
-prompt_git() {
-  if [ -f $(brew --prefix)/etc/bash_completion ]; then
-    . $(brew --prefix)/etc/bash_completion
-    # PS1='[\h \W$(__git_ps1 " (%s)")]\$ ';
-    # PS1="\u@\h \W$(__git_ps1 '(%s)') $ "
-    PS1='\u@\h \W$(__git_ps1 " (%s)")\$ '
+  git branch &>/dev/null
+
+  if [ $? -eq 0 ]; then
+    GIT_BRANCH=$(git branch --no-color 2> /dev/null | sed -e '/^[^*]/d' -e "s/* \(.*\)/ \1/")
+
+    if [[ $(git status 2> /dev/null | tail -n1) != "nothing to commit, working directory clean" ]]; then
+      GIT_COLOR="${RED}"
+    else
+      GIT_COLOR="${GREEN}"
+    fi
+  else
+    GIT_BRANCH=""
+    GIT_COLOR="${NORMAL}"
   fi
+
+  PS1="\[\033[01;32m\]\u@\h\[\033[00m\] ${debian_chroot:+($debian_chroot)}\[\033[01;34m\]\w\[\033[00m\]\[${YELLOW}\]${GIT_BRANCH}\[${GIT_COLOR}\] ▶\[${NORMAL}\] "
 }
 
-# ----------------------------------------------------------------------
-# MACOS X / DARWIN SPECIFIC
-# ----------------------------------------------------------------------
+# PS1='\u@\h \[\033[1;33m\]\w\[\033[0m\]$(parse_git_branch)$ '
 
-if [ "$UNAME" = Darwin ]; then
-    # put ports on the paths if /opt/local exists
-    test -x /opt/local -a ! -L /opt/local && {
-        PORTS=/opt/local
+if [ "$color_prompt" = yes ]; then
+    # PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    # PS1='${debian_chroot:+($debian_chroot)}\[\033[01;34m\]\w\[\033[00m\]$(git branch &>/dev/null; if [ $? -eq 0 ]; then echo " \[\033[01;33m\]($(git branch | grep '^*' |sed s/\*\ //))$(parse_git_dirty)"; fi) ▶\[\033[00m\] '
+    PROMPT_COMMAND=git_ps1
+else
+    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+fi
+unset color_prompt force_color_prompt
 
-        # setup the PATH and MANPATH
-        PATH="$PATH:$PORTS/bin:$PORTS/sbin"
-        MANPATH="$MANPATH:$PORTS/share/man"
+# If this is an xterm set the title to user@host:dir
+case "$TERM" in
+xterm*|rxvt*)
+    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+    ;;
+*)
+    ;;
+esac
 
-        # nice little port alias
-        alias port="sudo nice -n +18 $PORTS/bin/port"
-    }
+# enable color support of ls and also add handy aliases
+if [ -x /usr/bin/dircolors ]; then
+    test -r ~/.dircolors && eval "$(dircolors -b ~/.dircolors)" || eval "$(dircolors -b)"
+    alias ls='ls --color=auto'
+    #alias dir='dir --color=auto'
+    #alias vdir='vdir --color=auto'
 
-    test -x /usr/pkg -a ! -L /usr/pkg && {
-        PATH=":$PATH:/usr/pkg/sbin:/usr/pkg/bin"
-        MANPATH="$MANPATH:/usr/pkg/share/man"
-    }
-
-    # setup java environment. puke.
-    export JAVA_HOME=`/usr/libexec/java_home -v 1.6`
-
-    alias portscan="/Applications/Utilities/Network\ Utility.app/Contents/Resources/stroke"
-
+    alias grep='grep --color=auto'
+    alias fgrep='fgrep --color=auto'
+    alias egrep='egrep --color=auto'
 fi
 
 # ----------------------------------------------------------------------
@@ -302,20 +280,6 @@ alias u='cd ..'
 alias h='cd ~'
 alias pop='popd'
 
-#coreutils
-alias readlink=greadlink
-
-# Skype
-function export_skype_chat_history { 
-  sqlite3 ~/Library/Application\ Support/Skype/saimonmoore/main.db "SELECT author,timestamp, body_xml FROM messages WHERE dialog_partner = '$1'" > ~/Desktop/skype_chat_history_$1.txt
-}
-
-# changing directory to code project
-function c { cd ~/Development/Clients/Teambox/$1; }
-function cps { cd ~/Development/Projects/$1; }
-function cgh { cd ~/Development/OpenSource/github/$1; }
-function cfk { cd ~/Development/OpenSource/forks/$1; }
-
 #bash
 # disk usage with human sizes and minimal depth
 alias du1='du -h --max-depth=1'
@@ -328,7 +292,6 @@ alias r="history | grep"
 alias eb="$EDITOR ~/.profile"
 alias ab="source ~/.profile"
 alias eh="sudo $EDITOR /etc/hosts"
-alias ah="sudo dscacheutil -flushcache" #leopard
 alias clr='clear'
 alias grep='GREP_COLOR="1;37;41" LANG=C grep --color=auto'
 alias g='grep'
@@ -336,242 +299,18 @@ alias l='less'
 alias ec='e ~/Documents/commands.txt'
 alias sz="du -sk ./* | sort -n | awk 'BEGIN{ pref[1]=\"K\"; pref[2]=\"M\"; pref[3]=\"G\";} { total = total + \$1; x = \$1; y = 1; while( x > 1024 ) { x = (x + 1023)/1024; y++; } printf(\"%g%s\t%s\n\",int(x*10)/10,pref[y],\$2); } END { y = 1; while( total > 1024 ) { total = (total + 1023)/1024; y++; } printf(\"Total: %g%s\n\",int(total*10)/10,pref[y]); }'"
 alias time='gtime -f "%e %U %S %P" '
-alias bi='bundle install'
-#for tests
-alias bit='bundle install --standalone'
-
-#Grwol notifications
-function growl() { echo -e $'\e]9;'${*}'\007' ; return ; }
 
 #editors
-alias tm=mate
-alias tmw="tm -w "
 alias :e="vim"
-
-# osx
-alias ql="qlmanage -p 2>/dev/null"
-alias preview='open -a Preview -f'
-
-#projects
-alias pr="cd ~/Development/Projects"
-alias fr="cd ~/Development/Clients"
-alias os="cd ~/Development/OpenSource"
-alias ghb="cd ~/Development/OpenSource/github"
-alias gfk="cd ~/Development/OpenSource/forks"
 
 #ruby
 alias irb="irb --prompt simple"
-alias bspec="bundle exec spec"
-alias brspec="bundle exec rspec --format Fuubar --color "
-alias bcucumber="bundle exec cucumber"
-alias brake="bundle exec rake"
-alias birb="bundle exec irb"
 alias be="bundle exec"
-alias rsh='git remote update && git rebase hosted/hosted && bundle && cleardb && rails s'
-alias rsd='git remote update && git rebase orign/dev && bundle && cleardb && rails s'
-alias z=zeus
-
-function cleardb {
-  DEVDB="`ruby -e "require 'yaml'; puts YAML.load(File.open('config/database.yml'))['development']['database']"`" 
-  if [[ $DEVDB =~ "production" ]]; then
-      echo 'WATCHOUT! cleardb running against production dump';
-  else
-    bundle exec rake db:drop db:create db:schema:load db:seed && bundle exec rake db:test:clone;
-  fi
-}
-
-#bash
-alias logclear='for l in $(ls log/*.log); do > $l; done'
-alias slogclear="echo 'for l in \$(ls log/*.log); do > $l; done' | sudo sh"
-
-function bo {
-  if [ -z "$1" ]; then
-      bundle open $(git log -n 1 -p -- Gemfile | egrep "^\+ " | awk '{print $3}' | sed "s/'//g" | sed "s/,//g") &> /dev/null &
-  else
-    bundle open $1 &> /dev/null &
-  fi
-}
-
-function loopc {
-  args=("$@")
-
-  if [ $1 -ge 0 2>/dev/null ]
-  then
-    LIMIT=$1
-    unset args[0]
-  else
-    LIMIT=5
-  fi
-
-  for i in $(eval echo "{1..$LIMIT}"); do
-    $(eval echo "${args[@]}");
-  done
-}
-
-#ssh
-alias pssh="ssh -p 8888 "
-alias pscp="scp -P 8888 "
-alias tunnel='ssh -D 8888 -f -C -q -N'
-
-function ssh-copy-id {
-  cat ~/.ssh/$2 | ssh $1 'mkdir -p ~/.ssh; cat >> ~/.ssh/authorized_keys'
-}
-
-# Subversion
-alias sup='svn update'
-alias sst='svn status'
-alias sco='svn commit'
-alias sd='svn diff | gedit'
-alias slog='svn log | less'
-alias sex='svn export'
-alias signore='svn propedit svn:ignore'
-alias sexternal='svn propedit svn:externals'
-
-# Rails
-alias ss='./script/server'
-alias sc='./script/console'
-alias sg='./script/generate'
-alias sp='./script/plugin'
-alias migrate='rm -f db/*sqlite3 && rake db:migrate db:test:clone'
-
-function irp {
-  if [ -z "$1" ]; then
-    pry -r ./config/environment RAILS_ENV=development
-  else
-    pry -r ./config/environment RAILS_ENV=$1
-  fi
-}
-
-# Git
-if test -n "$(command -v hub)" ; then
-  alias git='hub'
-fi
-
-#redis
-alias start_redis='launchctl load -w ~/Library/LaunchAgents/io.redis.redis-server.plist'
-alias stop_redis='launchctl unload -w ~/Library/LaunchAgents/io.redis.redis-server.plist'
-alias restart_redis='launchctl unload -w ~/Library/LaunchAgents/io.redis.redis-server.plist; sudo launchctl load -w ~/Library/LaunchAgents/io.redis.redis-server.plist'
-
-#memcached
-alias start_memcached='launchctl load -w ~/Library/LaunchAgents/com.danga.memcached.plist'
-alias stop_memcached='launchctl unload -w ~/Library/LaunchAgents/com.danga.memcached.plist'
-alias restart_memcached='launchctl unload -w ~/Library/LaunchAgents/com.danga.memcached.plist; launchctl load -w ~/Library/LaunchAgents/com.danga.memcached.plist'
-
-#nginx
-alias start_nginx='sudo launchctl load -w ~/Library/LaunchAgents/org.nginx.plist'
-alias stop_nginx='sudo launchctl unload -w ~/Library/LaunchAgents/org.nginx.plist'
-alias restart_nginx='sudo launchctl unload -w ~/Library/LaunchAgents/org.nginx.plist; sudo launchctl load -w ~/Library/LaunchAgents/org.nginx.plist'
-
-#elasticsearch
-alias start_elastic='launchctl load -wF ~/Library/LaunchAgents/org.elasticsearch.plist'
-alias stop_elastic='launchctl unload -wF ~/Library/LaunchAgents/org.elasticsearch.plist'
-alias restart_elastic='stop_elastic;start_elastic'
 
 #mysql
 source ~/.mysql_aliases
 
-#rhino
-alias js="java org.mozilla.javascript.tools.shell.Main"
-alias jsbeautify="java org.mozilla.javascript.tools.shell.Main /Users/saimon/Development/bin/js-beautify/beautify-cl.js"
-
-#node
-#TODO: Use /usr/local/bin
-alias noderb="rlwrap ~/local/bin/node-repl"
-
-#Virtual Machines
-alias v="vagrant"
-#vmware
-alias vmfairup="vmrun -T fusion start ~/Documents/Virtual\ Machines.localized/officialfmvm.vmwarevm/generaldev.vmx nogui"
-alias vmfairdown="vmrun -T fusion suspend ~/Documents/Virtual\ Machines.localized/officialfmvm.vmwarevm/generaldev.vmx nogui"
-alias vmfairstatus="vmrun -T fusion list ~/Documents/Virtual\ Machines.localized/officialfmvm.vmwarevm/generaldev.vmx nogui"
-alias vmfairssh="ssh vagrant@fairvm"
-
-alias vmofmup="vmrun -T fusion start ~/Documents/Virtual\ Machines.localized/officialfmvm64.vmwarevm/Ubuntu\ 10.04\ server\ 64-bit.vmx nogui"
-alias vmofmdown="vmrun -T fusion suspend ~/Documents/Virtual\ Machines.localized/officialfmvm64.vmwarevm/Ubuntu\ 10.04\ server\ 64-bit.vmx nogui"
-alias vmofmstatus="vmrun -T fusion list ~/Documents/Virtual\ Machines.localized/officialfmvm64.vmwarevm/Ubuntu\ 10.04\ server\ 64-bit.vmx nogui"
-alias vmofmssh="ssh vagrant@ofmvm"
-
-
-alias vmbootstripup="vmrun -T fusion start ~/Documents/Virtual\ Machines.localized/bootstripdev.vmwarevm/generaldev.vmx nogui"
-alias vmbootstripdown="vmrun -T fusion suspend ~/Documents/Virtual\ Machines.localized/bootstripdev.vmwarevm/generaldev.vmx nogui"
-alias vmbootstripstatus="vmrun -T fusion list ~/Documents/Virtual\ Machines.localized/bootstripdev.vmwarevm/generaldev.vmx nogui"
-alias vmbootstripssh="ssh vagrant@bootstripvm"
-
-alias vmdevup="vmrun -T fusion start ~/Documents/Virtual\ Machines.localized/generaldev.vmwarevm/generaldev.vmx nogui"
-alias vmdevdown="vmrun -T fusion suspend ~/Documents/Virtual\ Machines.localized/generaldev.vmwarevm/generaldev.vmx nogui"
-alias vmdevstatus="vmrun -T fusion list ~/Documents/Virtual\ Machines.localized/generaldev.vmwarevm/generaldev.vmx nogui"
-alias vmdevssh="ssh vagrant@devvm"
-
-#virtualbox
-alias vbfairup="pushd ~/Development/Clients/fairtilizer/fair2; bundle exec vagrant resume; popd"
-alias vbfairdown="pushd ~/Development/Clients/fairtilizer/fair2; bundle exec vagrant suspend; popd"
-alias vbfairssh="pushd ~/Development/Clients/fairtilizer/fair2; bundle exec vagrant ssh; popd"
-alias vbbootstripup="pushd ~/Development/Projects/bootstrip/src; bundle exec vagrant resume; popd"
-alias vbbootstripdown="pushd ~/Development/Projects/bootstrip/src; bundle exec vagrant suspend; popd"
-alias vbbootstripssh="pushd ~/Development/Projects/bootstrip/src; bundle exec vagrant ssh; popd"
-
-#teambox
-alias diffprod='git diff $(ey ssh "cat /data/Teambox2/current/REVISION" -e hosted)..'
-function checkhosted { 
-  export HOSTED=$(ey ssh "cat /data/Teambox2/current/REVISION" -e hosted); echo $HOSTED;
-}
-
-function exechosted {
-  ey ssh "cd /data/Teambox2/current; RAILS_ENV=production bundle exec rails runner '$1'" -e hosted
-}
-
-alias tb4_console="ssh -t $($1|echo 'tb4-utility') 'cd /data/teambox/current; make console'"
-alias infojobs_console="ssh -t $($1|echo 'infojobs1') 'cd /data/teambox/current; bundle exec rails c'"
-
 # Functions
-
-gifify() {
-  if [[ -n "$1" ]]; then
-    if [[ $2 == '--good' ]]; then
-      ffmpeg -i $1 -r 10 -vcodec png out-static-%05d.png
-      time convert -verbose +dither -layers Optimize -resize 600x600\> out-static*.png  GIF:- | gifsicle --colors 128 --delay=5 --loop --optimize=3 --multifile - > $1.gif
-      rm out-static*.png
-    else
-      ffmpeg -i $1 -s 600x400 -pix_fmt rgb8 -r 10 -f gif - | gifsicle --optimize=3 --delay=3 > $1.gif
-    fi
-  else
-    echo "proper usage: gifify <input_movie.mov>. You DO need to include extension."
-  fi
-}
-
-
-# usage:
-#   $ superblame Mislav [<from>..<to>]
-function superblame {
-  git log --format=%h --author=$1 $2 | \
-    xargs -L1 -ISHA git diff --shortstat 'SHA^..SHA' app config/environment* config/initializers/ public/stylesheets/ | \
-    ruby -e 'n=Hash.new(0); while gets; i=0; puts $_.gsub(/\d+/){ n[i+=1] += $&.to_i }; end' | tail -n1
-}
-
-#Commented as now using osx keychain: http://www.dribin.org/dave/blog/archives/2007/11/28/ssh_agent_leopard/
-# function start_agent {
-#      echo "Initializing new SSH agent..."
-#      /usr/bin/ssh-agent | sed 's/^echo/#echo/' > ${SSH_ENV}
-#      echo succeeded
-#      chmod 600 ${SSH_ENV}
-#      . ${SSH_ENV} > /dev/null
-#      /usr/bin/ssh-add;
-# }
-
-# # Source SSH settings, if applicable
-# if [ -f "${SSH_ENV}" ]; then
-#      . ${SSH_ENV} > /dev/null
-#      ps -x | grep "^ *${SSH_AGENT_PID}" | grep ssh-agent$ > /dev/null || {
-#          start_agent;
-#      }
-# else
-#      start_agent;
-# fi
-
-#rvm
-function rvmd() {
-	rvm use $1 --default
-}
 
 #crypt
 function encryptaes()
@@ -592,173 +331,6 @@ function stealth() { "$@"; }
 function gitchangeset {
   git log --name-only --pretty=format:''  master..`__git_ps1 "%s"` | tr -s '\n' | uniq | sort -u
 }
-
-function gchm() {
-  sh -c "rake git:branch:checkout_with_migrations[$1]"
-}
-
-function rjson() {
-  wget $1 -O - --quiet | ruby -rubygems -e 'require "json"; puts JSON.parse($stdin.gets).to_yaml'
-}
-
-function s() {
-  cd ~/Development/$1
-  screen -Uc ~/.screenrc -S dev@artemis
-}
-
-# Usage: rename_ext php html
-rename_ext() {
-   local filename
-   for filename in *."$1"; do
-     mv "$filename" "${filename%.*}"."$2"
-   done
-}
-
-mvf() {
-if  mv "$@"; then
-  shift $(($#-1))
-  if [ -d $1 ]; then
-    cd ${1}
-  else
-    cd `dirname ${1}`
-  fi
-fi
-}
-
-###   Handy Extract Program
-function extract() {
-    if [ -f $1 ] ; then
-        case $1 in
-            *.tar.bz2)   tar xvjf $1        ;;
-            *.tar.gz)    tar xvzf $1     ;;
-            *.bz2)       bunzip2 $1       ;;
-            *.rar)       unrar x $1     ;;
-            *.gz)        gunzip $1     ;;
-            *.tar)       tar xvf $1        ;;
-            *.tbz2)      tar xvjf $1      ;;
-            *.tgz)       tar xvzf $1       ;;
-            *.zip)       unzip $1     ;;
-            *.Z)         uncompress $1  ;;
-            *.7z)        7z x $1    ;;
-            *)           echo "'$1' cannot be extracted via >extract<" ;;
-        esac
-    else
-        echo "'$1' is not a valid file"
-    fi
-}
-
-# Get the current revision of a repository
-srev()
-{
-  svn info $@ | awk '/^Revision:/ {print $2}'
-}
-
-# Does an svn up and then displays the changelog between your previous
-# version and what you just updated to.
-sup_log()
-{
-  local old_revision=`srev $@`
-  local first_update=$((${old_revision} + 1))
-  svn up -q $@
-  if [ $(srev $@) -gt ${old_revision} ]; then
-    svn log -v -rHEAD:${first_update} $@
-  else
-    echo "No changes."
-  fi
-}
-
-
-# push SSH public key to another box
-push_ssh_cert() {
-    local _host
-    test -f ~/.ssh/id_dsa.pub || ssh-keygen -t dsa
-    for _host in "$@";
-    do
-        echo $_host
-        ssh $_host 'cat >> ~/.ssh/authorized_keys' < ~/.ssh/id_dsa.pub
-    done
-}
-
-
-
-# ----------------------------------------------------------------------
-# BASH COMPLETION
-# ----------------------------------------------------------------------
-
-# test -z "$BASH_COMPLETION" && {
-#     bash=${BASH_VERSION%.*}; bmajor=${bash%.*}; bminor=${bash#*.}
-#     test -n "$PS1" && test $bmajor -gt 1 && {
-#         # search for a bash_completion file to source
-#         for f in /usr/local/etc/bash_completion \
-#                  /usr/pkg/etc/bash_completion \
-#                  /opt/local/etc/bash_completion \
-#                  /etc/bash_completion
-#         do
-#             test -f $f && {
-#                 . $f
-#                 break
-#             }
-#         done
-#     }
-#     unset bash bmajor bminor
-# }
-
-# override and disable tilde expansion
-_expand() {
-    return 0
-}
-
-# tab completion for ssh hosts
-# http://drawohara.tumblr.com/post/6584031
-# SSH_COMPLETE=( $(cat ~/.ssh/known_hosts | \
-#                  cut -f 1 -d ' ' | \
-#                  sed -e s/,.*//g | \
-#                  sed -e s/[]:8\[]*//g | \
-#                  sed s/:\d+//g | \
-#                  uniq | egrep -v [01234456789]) )
-
-# complete -o default -W "${SSH_COMPLETE[*]}" ssh
-# complete -o default -W "${SSH_COMPLETE[*]}" pssh
-
-# _complete_git() {
-#   if [ -d .git ]; then
-#     branches=`git branch -a | cut -c 3-`
-#     tags=`git tag`
-#     cur="${COMP_WORDS[COMP_CWORD]}"
-#     COMPREPLY=( $(compgen -W "${branches} ${tags}" -- ${cur}) )
-#   fi
-# }
-
-# complete -F _complete_git gch
-
-# complete -C ~/dotfiles/completion_scripts/rake_completion -o default rake
-# complete -C ~/dotfiles/completion_scripts/client_completion -o default c
-# complete -C ~/dotfiles/completion_scripts/project_completion -o default cps
-# complete -C ~/dotfiles/completion_scripts/github_completion -o default cgh
-# complete -C ~/dotfiles/completion_scripts/forks_completion -o default cfk
-# complete -C ~/dotfiles/completion_scripts/capistrano_completion -o default cap
-
-
-# _hackergemscomplete() {
-#     local cur prev opts base
-#     COMPREPLY=()
-#     cur="${COMP_WORDS[COMP_CWORD]}"
-#     prev="${COMP_WORDS[COMP_CWORD-1]}"
-
-#     languages="`hacker_gems gems:languages | xargs`"
-#     tags="`hacker_gems gems:tags | xargs`"
-
-#     if [ "${prev}" = "hacker_gems" ]; then
-#       COMPREPLY=($(compgen -W "${languages}" -- ${cur}))  
-#       return 0
-#     else
-# 	  COMPREPLY=( $(compgen -W "${tags}" -- ${cur}) )
-#       return 0
-#     fi
-# }
-# complete -o default -o nospace -F _hackergemscomplete hacker_gems
-
-source /usr/local/bin/tmuxinator.bash
 
 # ----------------------------------------------------------------------
 # LS AND DIRCOLORS
@@ -788,23 +360,9 @@ alias l.="ls -d .*"
 # alias ls='ls -FG'
 alias la='ls -A'
 alias lx='ls -X'
-alias ssu='bundle exec unicorn -c ~/.unicorn_dev.rb -E development -l 3000 -D'
-alias ssud='bundle exec unicorn -d -c ~/.unicorn_dev.rb -E development -l 3000 -D'
-
-
 
 # -------------------------------------------------------------------
 # USER SHELL ENVIRONMENT
 # -------------------------------------------------------------------
 
-# Use the color prompt by default when interactive
-test -n "$PS1" &&
-prompt_git
-
-export PATH="$HOME/.rbenv/bin:$PATH"
-eval "$(rbenv init -)"
-
 # vim: ts=4 sts=4 shiftwidth=4 expandtab
-
-[[ -s "/Users/saimon/.gvm/scripts/gvm" ]] && source "/Users/saimon/.gvm/scripts/gvm"
-[[ -f $HOME/.gemrc_local ]] && export GEMRC=$HOME/.gemrc_local
